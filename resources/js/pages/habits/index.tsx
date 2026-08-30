@@ -114,7 +114,9 @@ export default function HabitsIndex({ habits }: HabitsIndexProps) {
                                     </Button>
                                 </div>
                                 <div className="mt-4 overflow-x-auto">
-                                    <HabitHeatmapStrip heatmap={habit.heatmap} />
+                                    <HabitHeatmapStrip
+                                        heatmap={habit.heatmap}
+                                    />
                                 </div>
                             </article>
                         ))}

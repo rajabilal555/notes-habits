@@ -42,7 +42,7 @@ export function NoteCard({
             className={cn(
                 'border-sidebar-border/70 dark:border-sidebar-border flex min-h-32 cursor-pointer flex-col gap-2 rounded-xl border p-4 text-left transition-colors',
                 noteColorClassName(note.color),
-                'hover:brightness-[0.98] focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none dark:hover:brightness-110',
+                'focus-visible:ring-ring hover:brightness-[0.98] focus-visible:ring-2 focus-visible:outline-none dark:hover:brightness-110',
             )}
         >
             <div className="flex items-start justify-between gap-2">

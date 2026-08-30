@@ -78,7 +78,8 @@ export function HabitFormDialog({
                         {({ processing }) => (
                             <>
                                 <p className="text-muted-foreground text-sm">
-                                    Delete this habit and its completion history?
+                                    Delete this habit and its completion
+                                    history?
                                 </p>
                                 <DialogFooter className="gap-2 sm:justify-between">
                                     <Button
@@ -203,9 +204,7 @@ export function HabitFormDialog({
                                         <Button
                                             type="button"
                                             variant="outline"
-                                            onClick={() =>
-                                                onOpenChange(false)
-                                            }
+                                            onClick={() => onOpenChange(false)}
                                         >
                                             Cancel
                                         </Button>

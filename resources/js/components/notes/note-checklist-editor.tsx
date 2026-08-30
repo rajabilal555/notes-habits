@@ -21,10 +21,7 @@ export function NoteChecklistEditor({
     onChange: (items: ChecklistItemDraft[]) => void;
     variant?: 'default' | 'inline';
 }) {
-    const updateItem = (
-        index: number,
-        patch: Partial<ChecklistItemDraft>,
-    ) => {
+    const updateItem = (index: number, patch: Partial<ChecklistItemDraft>) => {
         onChange(
             reindex(
                 items.map((item, itemIndex) =>
@@ -114,7 +111,12 @@ export function NoteChecklistEditor({
         <div className="grid gap-2">
             <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Checklist</span>
-                <Button type="button" variant="outline" size="sm" onClick={addItem}>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addItem}
+                >
                     <Plus className="size-4" />
                     Add item
                 </Button>

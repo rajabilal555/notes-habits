@@ -27,10 +27,7 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
-import {
-    formatReminder,
-    toDatetimeLocalValue,
-} from '@/lib/datetime-local';
+import { formatReminder, toDatetimeLocalValue } from '@/lib/datetime-local';
 import type { NoteColorId } from '@/lib/note-colors';
 import { noteColorClassName } from '@/lib/note-colors';
 import { itemsToDrafts, type ChecklistItemDraft } from '@/lib/note-checklist';
@@ -79,15 +76,12 @@ export function NoteFormDialog({
         setReminderAt(toDatetimeLocalValue(note?.reminder_at ?? null));
     }, [open, note]);
 
-    const selectedLabelCount =
-        selectedLabelIds.length + newLabelNames.length;
+    const selectedLabelCount = selectedLabelIds.length + newLabelNames.length;
     const hasChecklist = items.length > 0;
 
     const enableChecklist = () => {
         if (!hasChecklist) {
-            setItems([
-                { text: '', is_checked: false, sort_order: 0 },
-            ]);
+            setItems([{ text: '', is_checked: false, sort_order: 0 }]);
         }
     };
 
@@ -125,9 +119,7 @@ export function NoteFormDialog({
 
                 {isEditing && confirmDelete ? (
                     <div className="space-y-4 p-5">
-                        <p className="text-sm">
-                            Delete this note permanently?
-                        </p>
+                        <p className="text-sm">Delete this note permanently?</p>
                         <Form
                             {...NoteController.destroy.form(note.id)}
                             options={{ preserveScroll: true }}
@@ -197,7 +189,9 @@ export function NoteFormDialog({
                                             }
                                             aria-pressed={isPinned}
                                             onClick={() =>
-                                                setIsPinned((current) => !current)
+                                                setIsPinned(
+                                                    (current) => !current,
+                                                )
                                             }
                                         >
                                             <Pin className="size-4 rotate-45" />
@@ -335,9 +329,7 @@ export function NoteFormDialog({
                                         <PopoverTrigger asChild>
                                             <NoteToolbarButton
                                                 aria-label="Labels"
-                                                active={
-                                                    selectedLabelCount > 0
-                                                }
+                                                active={selectedLabelCount > 0}
                                             >
                                                 <Tag className="size-4" />
                                             </NoteToolbarButton>
@@ -469,9 +461,7 @@ export function NoteFormDialog({
                                             variant="ghost"
                                             size="sm"
                                             className="text-muted-foreground"
-                                            onClick={() =>
-                                                onOpenChange(false)
-                                            }
+                                            onClick={() => onOpenChange(false)}
                                         >
                                             Cancel
                                         </Button>

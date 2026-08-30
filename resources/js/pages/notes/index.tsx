@@ -162,10 +162,7 @@ export default function NotesIndex({
                         ))}
                     </NotesMasonryGrid>
                 ) : (
-                    <SortableNotesGrid
-                        notes={notes}
-                        onEditNote={openEdit}
-                    />
+                    <SortableNotesGrid notes={notes} onEditNote={openEdit} />
                 )}
             </div>
 

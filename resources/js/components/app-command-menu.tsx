@@ -36,7 +36,10 @@ export function AppCommandMenu() {
                             {pageActions.map((action) => (
                                 <CommandItem
                                     key={action.id}
-                                    value={[action.label, ...(action.keywords ?? [])].join(' ')}
+                                    value={[
+                                        action.label,
+                                        ...(action.keywords ?? []),
+                                    ].join(' ')}
                                     onSelect={() => run(action.onSelect)}
                                 >
                                     {action.icon ? <action.icon /> : null}
@@ -58,9 +61,7 @@ export function AppCommandMenu() {
                         <CommandItem
                             key={item.title}
                             value={item.title}
-                            onSelect={() =>
-                                run(() => router.visit(item.href))
-                            }
+                            onSelect={() => run(() => router.visit(item.href))}
                         >
                             {item.icon ? <item.icon /> : null}
                             <span>{item.title}</span>
@@ -77,9 +78,7 @@ export function AppCommandMenu() {
                     </CommandItem>
                     <CommandItem
                         value="Settings profile"
-                        onSelect={() =>
-                            run(() => router.visit(profileEdit()))
-                        }
+                        onSelect={() => run(() => router.visit(profileEdit()))}
                     >
                         <Settings />
                         <span>Settings</span>
@@ -91,9 +90,7 @@ export function AppCommandMenu() {
                 <CommandGroup heading="Account">
                     <CommandItem
                         value="Log out"
-                        onSelect={() =>
-                            run(() => router.post(logout.url()))
-                        }
+                        onSelect={() => run(() => router.post(logout.url()))}
                     >
                         <LogOut />
                         <span>Log out</span>

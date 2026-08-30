@@ -79,7 +79,9 @@ export function NoteLabelPickerContent({
             return;
         }
 
-        if (newNames.some((value) => value.toLowerCase() === name.toLowerCase())) {
+        if (
+            newNames.some((value) => value.toLowerCase() === name.toLowerCase())
+        ) {
             setDraft('');
             return;
         }
@@ -179,7 +181,12 @@ export function NoteLabelPickerContent({
                         }
                     }}
                 />
-                <Button type="button" variant="outline" size="sm" onClick={addName}>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addName}
+                >
                     Add
                 </Button>
             </div>
