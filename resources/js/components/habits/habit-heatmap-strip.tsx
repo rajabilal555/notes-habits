@@ -3,6 +3,24 @@ import { cn } from '@/lib/utils';
 
 const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
+function cellClass(cell: HeatmapCell): string {
+    if (cell.future) {
+        return 'bg-transparent';
+    }
+
+    if (cell.completed) {
+        return cell.scheduled
+            ? 'bg-emerald-500 dark:bg-emerald-600'
+            : 'bg-emerald-500/60 dark:bg-emerald-600/60';
+    }
+
+    if (cell.scheduled) {
+        return 'bg-muted-foreground/25';
+    }
+
+    return 'bg-muted/40';
+}
+
 export function HabitHeatmapStrip({
     heatmap,
     compact = false,
@@ -11,52 +29,42 @@ export function HabitHeatmapStrip({
     compact?: boolean;
 }) {
     const weeks = heatmap.length;
-    const cellSize = compact ? 'size-2.5' : 'size-3';
+    const cellSize = compact ? 8 : 10;
 
     return (
-        <div className="flex gap-2">
-            {!compact ? (
-                <div className="text-muted-foreground flex flex-col gap-[3px] pt-0.5 text-[10px] leading-none">
-                    {DAY_LABELS.map((label, index) => (
-                        <span key={index} className="flex h-3 items-center">
-                            {index % 2 === 1 ? label : ''}
-                        </span>
-                    ))}
-                </div>
-            ) : null}
-            <div
-                className="grid gap-[3px]"
-                style={{
-                    gridTemplateRows: 'repeat(7, minmax(0, 1fr))',
-                    gridTemplateColumns: `repeat(${weeks}, minmax(0, 1fr))`,
-                    gridAutoFlow: 'column',
-                }}
-            >
-                {heatmap.flatMap((week, weekIndex) =>
-                    week.map((cell, dayIndex) => (
-                        <div
-                            key={`${weekIndex}-${dayIndex}`}
-                            title={cell.date}
-                            className={cn(
-                                cellSize,
-                                'rounded-sm',
-                                cell.future && 'bg-transparent',
-                                !cell.future &&
-                                    !cell.scheduled &&
-                                    'bg-muted/40',
-                                !cell.future &&
-                                    cell.scheduled &&
-                                    !cell.completed &&
-                                    'bg-muted-foreground/25',
-                                !cell.future &&
-                                    cell.scheduled &&
-                                    cell.completed &&
-                                    'bg-emerald-500 dark:bg-emerald-600',
-                            )}
-                        />
-                    )),
-                )}
-            </div>
+        <div
+            className="inline-grid gap-[2px]"
+            style={{
+                gridTemplateColumns: `1rem repeat(${weeks}, ${cellSize}px)`,
+                gridTemplateRows: `repeat(7, ${cellSize}px)`,
+            }}
+        >
+            {DAY_LABELS.map((label, dayIndex) => (
+                <span
+                    key={`label-${dayIndex}`}
+                    className={cn(
+                        'text-muted-foreground flex items-center leading-none',
+                        compact ? 'text-[8px]' : 'text-[9px]',
+                    )}
+                    style={{ gridRow: dayIndex + 1, gridColumn: 1 }}
+                >
+                    {label}
+                </span>
+            ))}
+
+            {heatmap.flatMap((week, weekIndex) =>
+                week.map((cell, dayIndex) => (
+                    <div
+                        key={`${weekIndex}-${dayIndex}`}
+                        title={cell.date}
+                        style={{
+                            gridRow: dayIndex + 1,
+                            gridColumn: weekIndex + 2,
+                        }}
+                        className={cn('rounded-[2px]', cellClass(cell))}
+                    />
+                )),
+            )}
         </div>
     );
 }

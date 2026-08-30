@@ -1,6 +1,7 @@
 import { router } from '@inertiajs/react';
-import { GripVertical, Pin } from 'lucide-react';
+import { ArchiveRestore, GripVertical, Pin } from 'lucide-react';
 import type { DraggableAttributes } from '@dnd-kit/core';
+import NoteController from '@/actions/App/Http/Controllers/NoteController';
 import NoteItemController from '@/actions/App/Http/Controllers/NoteItemController';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -12,11 +13,13 @@ import type { Note } from '@/types/note';
 export function NoteCard({
     note,
     onClick,
+    archived = false,
     dragHandleRef,
     dragHandleProps,
 }: {
     note: Note;
     onClick: () => void;
+    archived?: boolean;
     dragHandleRef?: (element: HTMLElement | null) => void;
     dragHandleProps?: DraggableAttributes & Record<string, unknown>;
 }) {
@@ -64,11 +67,28 @@ export function NoteCard({
                         <span className="flex-1" />
                     )}
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex shrink-0 items-center gap-1">
                     {hasItems ? (
                         <span className="text-muted-foreground text-xs">
                             {checked}/{total}
                         </span>
+                    ) : null}
+                    {archived ? (
+                        <button
+                            type="button"
+                            className="text-muted-foreground hover:text-foreground rounded-full p-1 transition-colors"
+                            aria-label={`Restore ${title} to notes`}
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                router.patch(
+                                    NoteController.unarchive.url(note.id),
+                                    {},
+                                    { preserveScroll: true },
+                                );
+                            }}
+                        >
+                            <ArchiveRestore className="size-4" />
+                        </button>
                     ) : null}
                     {note.is_pinned ? (
                         <Pin

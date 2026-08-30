@@ -1,9 +1,9 @@
-import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import type { ChecklistItemDraft } from '@/lib/note-checklist';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 function reindex(items: ChecklistItemDraft[]): ChecklistItemDraft[] {
     return items.map((item, index) => ({
@@ -15,9 +15,11 @@ function reindex(items: ChecklistItemDraft[]): ChecklistItemDraft[] {
 export function NoteChecklistEditor({
     items,
     onChange,
+    variant = 'default',
 }: {
     items: ChecklistItemDraft[];
     onChange: (items: ChecklistItemDraft[]) => void;
+    variant?: 'default' | 'inline';
 }) {
     const updateItem = (
         index: number,
@@ -36,18 +38,6 @@ export function NoteChecklistEditor({
         onChange(reindex(items.filter((_, itemIndex) => itemIndex !== index)));
     };
 
-    const moveItem = (index: number, direction: -1 | 1) => {
-        const target = index + direction;
-
-        if (target < 0 || target >= items.length) {
-            return;
-        }
-
-        const next = [...items];
-        [next[index], next[target]] = [next[target], next[index]];
-        onChange(reindex(next));
-    };
-
     const addItem = () => {
         onChange(
             reindex([
@@ -61,10 +51,69 @@ export function NoteChecklistEditor({
         );
     };
 
+    if (variant === 'inline') {
+        return (
+            <ul className="space-y-2 px-4 pb-2">
+                {items.map((item, index) => (
+                    <li
+                        key={item.id ?? `new-${index}`}
+                        className="group flex items-start gap-2"
+                    >
+                        <Checkbox
+                            checked={item.is_checked}
+                            onCheckedChange={(checked) =>
+                                updateItem(index, {
+                                    is_checked: checked === true,
+                                })
+                            }
+                            className="mt-1"
+                        />
+                        <Input
+                            value={item.text}
+                            onChange={(event) =>
+                                updateItem(index, {
+                                    text: event.target.value,
+                                })
+                            }
+                            placeholder="List item"
+                            className={cn(
+                                'h-auto flex-1 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0',
+                                item.is_checked &&
+                                    'text-muted-foreground line-through',
+                            )}
+                        />
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="text-muted-foreground hover:text-destructive size-7 shrink-0 opacity-0 group-hover:opacity-100"
+                            onClick={() => removeItem(index)}
+                            aria-label="Remove item"
+                        >
+                            <Trash2 className="size-3.5" />
+                        </Button>
+                    </li>
+                ))}
+                <li>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground h-8 px-2"
+                        onClick={addItem}
+                    >
+                        <Plus className="size-4" />
+                        Add item
+                    </Button>
+                </li>
+            </ul>
+        );
+    }
+
     return (
         <div className="grid gap-2">
             <div className="flex items-center justify-between">
-                <Label>Checklist</Label>
+                <span className="text-sm font-medium">Checklist</span>
                 <Button type="button" variant="outline" size="sm" onClick={addItem}>
                     <Plus className="size-4" />
                     Add item
@@ -101,40 +150,16 @@ export function NoteChecklistEditor({
                                 placeholder="List item"
                                 className="flex-1"
                             />
-                            <div className="flex shrink-0 gap-1">
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="size-8"
-                                    disabled={index === 0}
-                                    onClick={() => moveItem(index, -1)}
-                                    aria-label="Move up"
-                                >
-                                    <ChevronUp className="size-4" />
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="size-8"
-                                    disabled={index === items.length - 1}
-                                    onClick={() => moveItem(index, 1)}
-                                    aria-label="Move down"
-                                >
-                                    <ChevronDown className="size-4" />
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="text-destructive hover:text-destructive size-8"
-                                    onClick={() => removeItem(index)}
-                                    aria-label="Remove item"
-                                >
-                                    <Trash2 className="size-4" />
-                                </Button>
-                            </div>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:text-destructive size-8"
+                                onClick={() => removeItem(index)}
+                                aria-label="Remove item"
+                            >
+                                <Trash2 className="size-4" />
+                            </Button>
                         </li>
                     ))}
                 </ul>

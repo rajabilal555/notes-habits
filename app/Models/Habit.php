@@ -25,6 +25,8 @@ class Habit extends Model
     /** @use HasFactory<HabitFactory> */
     use HasFactory;
 
+    public const HEATMAP_WEEKS = 26;
+
     /**
      * @return array<string, string>
      */
@@ -96,7 +98,7 @@ class Habit extends Model
     /**
      * @return list<array{date: string, scheduled: bool, completed: bool}>
      */
-    public function heatmapWeeks(int $weeks = 12): array
+    public function heatmapWeeks(int $weeks = self::HEATMAP_WEEKS): array
     {
         $start = today()->subWeeks($weeks - 1)->startOfWeek(Carbon::SUNDAY);
         $grid = [];
@@ -123,7 +125,7 @@ class Habit extends Model
                 $column[] = [
                     'date' => $date->toDateString(),
                     'scheduled' => $scheduled,
-                    'completed' => $scheduled && $this->isCompletedOn($date),
+                    'completed' => $this->isCompletedOn($date),
                     'future' => false,
                 ];
             }

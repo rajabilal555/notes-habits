@@ -1,24 +1,38 @@
 import { Form, router } from '@inertiajs/react';
-import { Pin } from 'lucide-react';
+import {
+    Archive,
+    Bell,
+    ListChecks,
+    Palette,
+    Pin,
+    Tag,
+    Trash2,
+    X,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import NoteController from '@/actions/App/Http/Controllers/NoteController';
+import LabelController from '@/actions/App/Http/Controllers/LabelController';
 import InputError from '@/components/input-error';
 import { NoteChecklistEditor } from '@/components/notes/note-checklist-editor';
 import { NoteColorPicker } from '@/components/notes/note-color-picker';
-import { NoteLabelPicker } from '@/components/notes/note-label-picker';
+import { NoteLabelPickerContent } from '@/components/notes/note-label-picker-content';
+import { NoteToolbarButton } from '@/components/notes/note-toolbar-button';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { toDatetimeLocalValue } from '@/lib/datetime-local';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
+import { Separator } from '@/components/ui/separator';
+import {
+    formatReminder,
+    toDatetimeLocalValue,
+} from '@/lib/datetime-local';
 import type { NoteColorId } from '@/lib/note-colors';
+import { noteColorClassName } from '@/lib/note-colors';
 import { itemsToDrafts, type ChecklistItemDraft } from '@/lib/note-checklist';
 import { cn } from '@/lib/utils';
 import type { Label as LabelType } from '@/types/label';
@@ -31,6 +45,9 @@ type NoteFormDialogProps = {
     availableLabels?: LabelType[];
     archivedView?: boolean;
 };
+
+const fieldClassName =
+    'border-0 bg-transparent px-4 shadow-none focus-visible:ring-0';
 
 export function NoteFormDialog({
     open,
@@ -62,31 +79,65 @@ export function NoteFormDialog({
         setReminderAt(toDatetimeLocalValue(note?.reminder_at ?? null));
     }, [open, note]);
 
+    const selectedLabelCount =
+        selectedLabelIds.length + newLabelNames.length;
+    const hasChecklist = items.length > 0;
+
+    const enableChecklist = () => {
+        if (!hasChecklist) {
+            setItems([
+                { text: '', is_checked: false, sort_order: 0 },
+            ]);
+        }
+    };
+
+    const deleteLabel = (label: LabelType) => {
+        if (
+            !window.confirm(
+                `Delete "${label.name}"? It will be removed from all notes.`,
+            )
+        ) {
+            return;
+        }
+
+        router.delete(LabelController.destroy.url(label.id), {
+            preserveScroll: true,
+            only: ['labels', 'notes'],
+            onSuccess: () => {
+                setSelectedLabelIds((current) =>
+                    current.filter((id) => id !== label.id),
+                );
+            },
+        });
+    };
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-lg">
-                <DialogHeader>
-                    <DialogTitle>
-                        {isEditing ? 'Edit note' : 'New note'}
-                    </DialogTitle>
-                </DialogHeader>
+            <DialogContent
+                className={cn(
+                    'gap-0 overflow-hidden rounded-2xl border-0 p-0 shadow-xl sm:max-w-lg [&>button]:hidden',
+                    noteColorClassName(color),
+                )}
+            >
+                <DialogTitle className="sr-only">
+                    {isEditing ? 'Edit note' : 'New note'}
+                </DialogTitle>
 
                 {isEditing && confirmDelete ? (
-                    <Form
-                        {...NoteController.destroy.form(note.id)}
-                        options={{ preserveScroll: true }}
-                        onSuccess={() => onOpenChange(false)}
-                        className="space-y-4"
-                    >
-                        {({ processing }) => (
-                            <>
-                                <p className="text-muted-foreground text-sm">
-                                    Delete this note permanently?
-                                </p>
-                                <DialogFooter className="gap-2 sm:justify-between">
+                    <div className="space-y-4 p-5">
+                        <p className="text-sm">
+                            Delete this note permanently?
+                        </p>
+                        <Form
+                            {...NoteController.destroy.form(note.id)}
+                            options={{ preserveScroll: true }}
+                            onSuccess={() => onOpenChange(false)}
+                        >
+                            {({ processing }) => (
+                                <div className="flex justify-end gap-2">
                                     <Button
                                         type="button"
-                                        variant="outline"
+                                        variant="ghost"
                                         onClick={() => setConfirmDelete(false)}
                                     >
                                         Cancel
@@ -98,10 +149,10 @@ export function NoteFormDialog({
                                     >
                                         Delete
                                     </Button>
-                                </DialogFooter>
-                            </>
-                        )}
-                    </Form>
+                                </div>
+                            )}
+                        </Form>
+                    </div>
                 ) : (
                     <Form
                         {...(isEditing
@@ -121,102 +172,246 @@ export function NoteFormDialog({
                         })}
                         options={{ preserveScroll: true }}
                         onSuccess={() => onOpenChange(false)}
-                        className="space-y-4"
                     >
                         {({ processing, errors }) => (
                             <>
-                                <div className="grid gap-2">
-                                    <Label>Color</Label>
-                                    <NoteColorPicker
-                                        value={color}
-                                        onChange={setColor}
-                                    />
-                                    <InputError message={errors.color} />
-                                </div>
-
-                                <div className="grid gap-2">
-                                    <Label htmlFor="note-title">Title</Label>
+                                <div className="flex items-start gap-2 px-4 pt-4">
                                     <Input
                                         id="note-title"
                                         name="title"
                                         defaultValue={note?.title ?? ''}
                                         placeholder="Title"
-                                    />
-                                    <InputError message={errors.title} />
-                                </div>
-
-                                <div className="grid gap-2">
-                                    <Label htmlFor="note-body">Note</Label>
-                                    <textarea
-                                        id="note-body"
-                                        name="body"
-                                        defaultValue={note?.body ?? ''}
-                                        placeholder="Take a note…"
-                                        rows={6}
                                         className={cn(
-                                            'border-input placeholder:text-muted-foreground flex w-full min-w-0 rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none md:text-sm',
-                                            'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]',
+                                            fieldClassName,
+                                            'flex-1 text-base font-semibold',
                                         )}
                                     />
-                                    <InputError message={errors.body} />
+                                    <div className="flex shrink-0 items-center gap-0.5">
+                                        <NoteToolbarButton
+                                            type="button"
+                                            active={isPinned}
+                                            aria-label={
+                                                isPinned
+                                                    ? 'Unpin note'
+                                                    : 'Pin note'
+                                            }
+                                            aria-pressed={isPinned}
+                                            onClick={() =>
+                                                setIsPinned((current) => !current)
+                                            }
+                                        >
+                                            <Pin className="size-4 rotate-45" />
+                                        </NoteToolbarButton>
+                                        <NoteToolbarButton
+                                            type="button"
+                                            aria-label="Close"
+                                            onClick={() => onOpenChange(false)}
+                                        >
+                                            <X className="size-4" />
+                                        </NoteToolbarButton>
+                                    </div>
                                 </div>
 
-                                <NoteChecklistEditor
-                                    items={items}
-                                    onChange={setItems}
-                                />
-                                <InputError message={errors.items} />
-
-                                <NoteLabelPicker
-                                    availableLabels={availableLabels}
-                                    selectedIds={selectedLabelIds}
-                                    newNames={newLabelNames}
-                                    onSelectedIdsChange={setSelectedLabelIds}
-                                    onNewNamesChange={setNewLabelNames}
+                                <input
+                                    type="hidden"
+                                    name="is_pinned"
+                                    value={isPinned ? '1' : '0'}
                                 />
 
-                                <div className="grid gap-2">
-                                    <Label htmlFor="note-reminder">Reminder</Label>
-                                    <Input
-                                        id="note-reminder"
-                                        type="datetime-local"
-                                        value={reminderAt}
-                                        onChange={(event) =>
-                                            setReminderAt(event.target.value)
-                                        }
-                                    />
-                                    <InputError message={errors.reminder_at} />
-                                </div>
+                                <textarea
+                                    id="note-body"
+                                    name="body"
+                                    defaultValue={note?.body ?? ''}
+                                    placeholder="Take a note…"
+                                    rows={hasChecklist ? 3 : 6}
+                                    className={cn(
+                                        fieldClassName,
+                                        'placeholder:text-muted-foreground min-h-24 w-full resize-none py-2 text-sm outline-none',
+                                    )}
+                                />
 
-                                <div className="flex items-center gap-2">
-                                    <Checkbox
-                                        id="note-pinned"
-                                        checked={isPinned}
-                                        onCheckedChange={(checked) =>
-                                            setIsPinned(checked === true)
-                                        }
+                                {hasChecklist ? (
+                                    <NoteChecklistEditor
+                                        items={items}
+                                        onChange={setItems}
+                                        variant="inline"
                                     />
-                                    <input
-                                        type="hidden"
-                                        name="is_pinned"
-                                        value={isPinned ? '1' : '0'}
-                                    />
-                                    <Label
-                                        htmlFor="note-pinned"
-                                        className="flex items-center gap-1.5 font-normal"
+                                ) : null}
+
+                                {(reminderAt || selectedLabelCount > 0) && (
+                                    <div className="flex flex-wrap gap-1.5 px-4 pb-2">
+                                        {reminderAt ? (
+                                            <Badge
+                                                variant="secondary"
+                                                className="gap-1 text-xs"
+                                            >
+                                                <Bell className="size-3" />
+                                                {formatReminder(
+                                                    new Date(
+                                                        reminderAt,
+                                                    ).toISOString(),
+                                                )}
+                                            </Badge>
+                                        ) : null}
+                                        {availableLabels
+                                            .filter((label) =>
+                                                selectedLabelIds.includes(
+                                                    label.id,
+                                                ),
+                                            )
+                                            .map((label) => (
+                                                <Badge
+                                                    key={label.id}
+                                                    variant="secondary"
+                                                    className="text-xs"
+                                                >
+                                                    {label.name}
+                                                </Badge>
+                                            ))}
+                                        {newLabelNames.map((name) => (
+                                            <Badge
+                                                key={name}
+                                                variant="secondary"
+                                                className="text-xs"
+                                            >
+                                                {name}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <InputError
+                                    message={errors.title}
+                                    className="px-4"
+                                />
+                                <InputError
+                                    message={errors.body}
+                                    className="px-4"
+                                />
+                                <InputError
+                                    message={errors.items}
+                                    className="px-4"
+                                />
+                                <InputError
+                                    message={errors.reminder_at}
+                                    className="px-4"
+                                />
+                                <InputError
+                                    message={errors.color}
+                                    className="px-4"
+                                />
+
+                                <div className="mt-2 flex items-center gap-1 border-t border-black/5 px-2 py-2 dark:border-white/10">
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <NoteToolbarButton
+                                                aria-label="Background color"
+                                                active={color !== 'default'}
+                                            >
+                                                <Palette className="size-4" />
+                                            </NoteToolbarButton>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto">
+                                            <p className="mb-2 text-sm font-medium">
+                                                Color
+                                            </p>
+                                            <NoteColorPicker
+                                                value={color}
+                                                onChange={setColor}
+                                                name="color"
+                                            />
+                                        </PopoverContent>
+                                    </Popover>
+
+                                    <NoteToolbarButton
+                                        aria-label="Checklist"
+                                        active={hasChecklist}
+                                        onClick={enableChecklist}
                                     >
-                                        <Pin className="size-4 rotate-45" />
-                                        Pin to top
-                                    </Label>
-                                </div>
+                                        <ListChecks className="size-4" />
+                                    </NoteToolbarButton>
 
-                                <DialogFooter className="flex-col gap-3 sm:flex-col sm:items-stretch">
-                                    {isEditing ? (
-                                        <div className="flex flex-wrap gap-2">
-                                            {archivedView ? (
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <NoteToolbarButton
+                                                aria-label="Labels"
+                                                active={
+                                                    selectedLabelCount > 0
+                                                }
+                                            >
+                                                <Tag className="size-4" />
+                                            </NoteToolbarButton>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-64">
+                                            <NoteLabelPickerContent
+                                                availableLabels={
+                                                    availableLabels
+                                                }
+                                                attachedLabels={
+                                                    note?.labels ?? []
+                                                }
+                                                selectedIds={selectedLabelIds}
+                                                newNames={newLabelNames}
+                                                onSelectedIdsChange={
+                                                    setSelectedLabelIds
+                                                }
+                                                onNewNamesChange={
+                                                    setNewLabelNames
+                                                }
+                                                onDeleteLabel={deleteLabel}
+                                            />
+                                        </PopoverContent>
+                                    </Popover>
+
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <NoteToolbarButton
+                                                aria-label="Reminder"
+                                                active={reminderAt !== ''}
+                                            >
+                                                <Bell className="size-4" />
+                                            </NoteToolbarButton>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-64">
+                                            <p className="mb-2 text-sm font-medium">
+                                                Reminder
+                                            </p>
+                                            <Input
+                                                id="note-reminder"
+                                                type="datetime-local"
+                                                value={reminderAt}
+                                                onChange={(event) =>
+                                                    setReminderAt(
+                                                        event.target.value,
+                                                    )
+                                                }
+                                                className="h-9"
+                                            />
+                                            {reminderAt ? (
                                                 <Button
                                                     type="button"
-                                                    variant="outline"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="mt-2 h-8 px-2"
+                                                    onClick={() =>
+                                                        setReminderAt('')
+                                                    }
+                                                >
+                                                    Clear reminder
+                                                </Button>
+                                            ) : null}
+                                        </PopoverContent>
+                                    </Popover>
+
+                                    {isEditing ? (
+                                        <>
+                                            <Separator
+                                                orientation="vertical"
+                                                className="mx-1 h-6"
+                                            />
+                                            {archivedView ? (
+                                                <NoteToolbarButton
+                                                    aria-label="Restore note"
                                                     onClick={() =>
                                                         router.patch(
                                                             NoteController.unarchive.url(
@@ -233,12 +428,11 @@ export function NoteFormDialog({
                                                         )
                                                     }
                                                 >
-                                                    Restore to notes
-                                                </Button>
+                                                    <Archive className="size-4" />
+                                                </NoteToolbarButton>
                                             ) : (
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
+                                                <NoteToolbarButton
+                                                    aria-label="Archive note"
                                                     onClick={() =>
                                                         router.patch(
                                                             NoteController.archive.url(
@@ -255,26 +449,26 @@ export function NoteFormDialog({
                                                         )
                                                     }
                                                 >
-                                                    Archive
-                                                </Button>
+                                                    <Archive className="size-4" />
+                                                </NoteToolbarButton>
                                             )}
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                className="text-destructive hover:text-destructive"
+                                            <NoteToolbarButton
+                                                aria-label="Delete note"
                                                 onClick={() =>
                                                     setConfirmDelete(true)
                                                 }
                                             >
-                                                Delete
-                                            </Button>
-                                        </div>
+                                                <Trash2 className="size-4" />
+                                            </NoteToolbarButton>
+                                        </>
                                     ) : null}
 
-                                    <div className="flex justify-end gap-2">
+                                    <div className="ml-auto flex items-center gap-2 pr-1">
                                         <Button
                                             type="button"
-                                            variant="outline"
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-muted-foreground"
                                             onClick={() =>
                                                 onOpenChange(false)
                                             }
@@ -283,12 +477,14 @@ export function NoteFormDialog({
                                         </Button>
                                         <Button
                                             type="submit"
+                                            size="sm"
                                             disabled={processing}
+                                            className="rounded-full px-5"
                                         >
                                             {isEditing ? 'Save' : 'Create'}
                                         </Button>
                                     </div>
-                                </DialogFooter>
+                                </div>
                             </>
                         )}
                     </Form>

@@ -58,6 +58,7 @@ export default function NotesArchived({ notes, labels }: NotesArchivedProps) {
                             <NoteCard
                                 key={note.id}
                                 note={note}
+                                archived
                                 onClick={() => openEdit(note)}
                             />
                         ))}

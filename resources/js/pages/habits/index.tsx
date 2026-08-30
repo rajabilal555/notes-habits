@@ -65,26 +65,22 @@ export default function HabitsIndex({ habits }: HabitsIndexProps) {
                             >
                                 <div className="flex flex-wrap items-start justify-between gap-4">
                                     <div className="flex min-w-0 flex-1 items-start gap-3">
-                                        {habit.scheduled_today ? (
-                                            <Checkbox
-                                                checked={habit.completed_today}
-                                                onCheckedChange={() =>
-                                                    router.patch(
-                                                        HabitController.toggleCompletion.url(
-                                                            habit.id,
-                                                        ),
-                                                        {},
-                                                        {
-                                                            preserveScroll: true,
-                                                        },
-                                                    )
-                                                }
-                                                className="mt-1"
-                                                aria-label={`Mark ${habit.name} complete for today`}
-                                            />
-                                        ) : (
-                                            <span className="mt-1 size-4 shrink-0" />
-                                        )}
+                                        <Checkbox
+                                            checked={habit.completed_today}
+                                            onCheckedChange={() =>
+                                                router.patch(
+                                                    HabitController.toggleCompletion.url(
+                                                        habit.id,
+                                                    ),
+                                                    {},
+                                                    {
+                                                        preserveScroll: true,
+                                                    },
+                                                )
+                                            }
+                                            className="mt-1"
+                                            aria-label={`Mark ${habit.name} complete for today`}
+                                        />
                                         <div className="min-w-0 flex-1 space-y-1">
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <h2 className="font-medium">
@@ -99,11 +95,11 @@ export default function HabitsIndex({ habits }: HabitsIndexProps) {
                                                 {habit.cadence === 'daily'
                                                     ? 'Every day'
                                                     : 'Selected weekdays'}
-                                                {!habit.scheduled_today
-                                                    ? ' · not scheduled today'
-                                                    : habit.completed_today
-                                                      ? ' · done today'
-                                                      : ' · due today'}
+                                                {habit.completed_today
+                                                    ? ' · done today'
+                                                    : habit.scheduled_today
+                                                      ? ' · due today'
+                                                      : ' · not scheduled today'}
                                             </p>
                                         </div>
                                     </div>

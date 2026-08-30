@@ -91,25 +91,21 @@ export default function Dashboard({ dueToday, habits }: DashboardProps) {
                                 >
                                     <div className="mb-3 flex items-center justify-between gap-3">
                                         <div className="flex min-w-0 items-center gap-2">
-                                            {habit.scheduled_today ? (
-                                                <Checkbox
-                                                    checked={
-                                                        habit.completed_today
-                                                    }
-                                                    onCheckedChange={() =>
-                                                        router.patch(
-                                                            HabitController.toggleCompletion.url(
-                                                                habit.id,
-                                                            ),
-                                                            {},
-                                                            {
-                                                                preserveScroll: true,
-                                                            },
-                                                        )
-                                                    }
-                                                    aria-label={`Mark ${habit.name} complete for today`}
-                                                />
-                                            ) : null}
+                                            <Checkbox
+                                                checked={habit.completed_today}
+                                                onCheckedChange={() =>
+                                                    router.patch(
+                                                        HabitController.toggleCompletion.url(
+                                                            habit.id,
+                                                        ),
+                                                        {},
+                                                        {
+                                                            preserveScroll: true,
+                                                        },
+                                                    )
+                                                }
+                                                aria-label={`Mark ${habit.name} complete for today`}
+                                            />
                                             <div className="min-w-0">
                                                 <p className="truncate font-medium">
                                                     {habit.name}

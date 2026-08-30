@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HabitController;
+use App\Http\Controllers\LabelController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\NoteItemController;
 use Illuminate\Support\Facades\Route;
@@ -19,6 +20,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('notes/{note}/archive', [NoteController::class, 'archive'])->name('notes.archive');
     Route::patch('notes/{note}/unarchive', [NoteController::class, 'unarchive'])->name('notes.unarchive');
     Route::delete('notes/{note}', [NoteController::class, 'destroy'])->name('notes.destroy');
+    Route::delete('labels/{label}', [LabelController::class, 'destroy'])->name('labels.destroy');
     Route::get('habits', [HabitController::class, 'index'])->name('habits.index');
     Route::post('habits', [HabitController::class, 'store'])->name('habits.store');
     Route::patch('habits/{habit}', [HabitController::class, 'update'])->name('habits.update');

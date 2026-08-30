@@ -62,7 +62,7 @@ test('habits index includes streak and heatmap payload', function () {
             ->where('habits.0.name', 'Meditate')
             ->where('habits.0.streak', 1)
             ->where('habits.0.completed_today', true)
-            ->has('habits.0.heatmap', 12),
+            ->has('habits.0.heatmap', 26),
         );
 });
 
@@ -82,16 +82,16 @@ test('users cannot modify another users habits', function () {
         ->assertForbidden();
 });
 
-test('habit heatmap spans twelve weeks', function () {
+test('habit heatmap spans six months of weeks', function () {
     Carbon::setTestNow('2026-08-30 09:00:00');
 
     $habit = Habit::factory()->create();
 
     $heatmap = $habit->heatmapWeeks();
 
-    expect($heatmap)->toHaveCount(12)
+    expect($heatmap)->toHaveCount(Habit::HEATMAP_WEEKS)
         ->and($heatmap[0])->toHaveCount(7)
-        ->and($heatmap[11][6]['future'])->toBeTrue();
+        ->and($heatmap[Habit::HEATMAP_WEEKS - 1][6]['future'])->toBeTrue();
 });
 
 test('weekday habits skip unscheduled days in streak', function () {
