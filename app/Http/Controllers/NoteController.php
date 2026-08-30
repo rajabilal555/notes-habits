@@ -21,7 +21,7 @@ class NoteController extends Controller
     private const NOTE_FIELDS = [
         'id',
         'title',
-        'body',
+        'content',
         'color',
         'is_pinned',
         'archived_at',
@@ -61,10 +61,9 @@ class NoteController extends Controller
     public function store(StoreNoteRequest $request): RedirectResponse
     {
         $validated = $request->validated();
-        $items = $validated['items'] ?? [];
         $labelIds = $validated['label_ids'] ?? [];
         $labelNames = $validated['label_names'] ?? [];
-        unset($validated['items'], $validated['label_ids'], $validated['label_names']);
+        unset($validated['label_ids'], $validated['label_names']);
 
         $minSortOrder = $request->user()
             ->notes()
@@ -76,7 +75,6 @@ class NoteController extends Controller
             ...$validated,
             'sort_order' => $minSortOrder !== null ? $minSortOrder - 1 : 0,
         ]);
-        $note->syncItems($items);
         $note->syncLabels($request->user(), $labelIds, $labelNames);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Note created.')]);
@@ -89,13 +87,11 @@ class NoteController extends Controller
         $this->authorize('update', $note);
 
         $validated = $request->validated();
-        $items = $validated['items'] ?? [];
         $labelIds = $validated['label_ids'] ?? [];
         $labelNames = $validated['label_names'] ?? [];
-        unset($validated['items'], $validated['label_ids'], $validated['label_names']);
+        unset($validated['label_ids'], $validated['label_names']);
 
         $note->update($validated);
-        $note->syncItems($items);
         $note->syncLabels($request->user(), $labelIds, $labelNames);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Note updated.')]);
@@ -165,9 +161,6 @@ class NoteController extends Controller
     private function notesWithRelations(HasMany $query): HasMany
     {
         return $query->with([
-            'items' => fn ($items) => $items
-                ->select(['id', 'note_id', 'text', 'is_checked', 'sort_order'])
-                ->orderBy('sort_order'),
             'labels:id,name,color',
         ]);
     }

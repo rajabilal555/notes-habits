@@ -17,7 +17,7 @@ class DashboardController extends Controller
             ->active()
             ->whereDate('reminder_at', today())
             ->orderBy('reminder_at')
-            ->get(['id', 'title', 'body', 'reminder_at']);
+            ->get(['id', 'title', 'reminder_at']);
 
         $habits = $user->habits()
             ->orderBy('name')

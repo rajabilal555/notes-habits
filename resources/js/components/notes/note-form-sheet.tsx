@@ -1,25 +1,17 @@
+import type { FormDataConvertible } from '@inertiajs/core';
 import { Form, router } from '@inertiajs/react';
-import {
-    Archive,
-    Bell,
-    ListChecks,
-    Palette,
-    Pin,
-    Tag,
-    Trash2,
-    X,
-} from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Archive, Bell, Palette, Tag, Trash2, X } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import NoteController from '@/actions/App/Http/Controllers/NoteController';
 import LabelController from '@/actions/App/Http/Controllers/LabelController';
 import InputError from '@/components/input-error';
-import { NoteChecklistEditor } from '@/components/notes/note-checklist-editor';
+import { NoteBlockView } from '@/components/notes/note-block-view';
 import { NoteColorPicker } from '@/components/notes/note-color-picker';
 import { NoteLabelPickerContent } from '@/components/notes/note-label-picker-content';
+import { NotePinIcon } from '@/components/notes/note-pin-icon';
 import { NoteToolbarButton } from '@/components/notes/note-toolbar-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
     Popover,
@@ -27,15 +19,21 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
+import {
+    Sheet,
+    SheetContent,
+    SheetTitle,
+} from '@/components/ui/sheet';
 import { formatReminder, toDatetimeLocalValue } from '@/lib/datetime-local';
+import { isNoteBlockOverlayTarget } from '@/lib/note-block-schema';
+import type { NoteBlock } from '@/lib/note-block-progress';
 import type { NoteColorId } from '@/lib/note-colors';
 import { noteColorClassName } from '@/lib/note-colors';
-import { itemsToDrafts, type ChecklistItemDraft } from '@/lib/note-checklist';
 import { cn } from '@/lib/utils';
 import type { Label as LabelType } from '@/types/label';
 import type { Note } from '@/types/note';
 
-type NoteFormDialogProps = {
+type NoteFormSheetProps = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     note?: Note | null;
@@ -46,18 +44,27 @@ type NoteFormDialogProps = {
 const fieldClassName =
     'border-0 bg-transparent px-4 shadow-none focus-visible:ring-0';
 
-export function NoteFormDialog({
+const keepEditorOverlayOpen = (event: {
+    detail: { originalEvent: Event };
+    preventDefault: () => void;
+}) => {
+    if (isNoteBlockOverlayTarget(event.detail.originalEvent.target)) {
+        event.preventDefault();
+    }
+};
+
+export function NoteFormSheet({
     open,
     onOpenChange,
     note = null,
     availableLabels = [],
     archivedView = false,
-}: NoteFormDialogProps) {
+}: NoteFormSheetProps) {
     const isEditing = note !== null;
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [color, setColor] = useState<NoteColorId>('default');
     const [isPinned, setIsPinned] = useState(false);
-    const [items, setItems] = useState<ChecklistItemDraft[]>([]);
+    const [content, setContent] = useState<NoteBlock[] | null>(null);
     const [selectedLabelIds, setSelectedLabelIds] = useState<number[]>([]);
     const [newLabelNames, setNewLabelNames] = useState<string[]>([]);
     const [reminderAt, setReminderAt] = useState('');
@@ -70,20 +77,20 @@ export function NoteFormDialog({
 
         setColor(note?.color ?? 'default');
         setIsPinned(note?.is_pinned ?? false);
-        setItems(note ? itemsToDrafts(note.items) : []);
+        setContent(note?.content ?? null);
         setSelectedLabelIds(note?.labels.map((label) => label.id) ?? []);
         setNewLabelNames([]);
         setReminderAt(toDatetimeLocalValue(note?.reminder_at ?? null));
     }, [open, note]);
 
     const selectedLabelCount = selectedLabelIds.length + newLabelNames.length;
-    const hasChecklist = items.length > 0;
+    const editorKey = `${note?.id ?? 'new'}-${open ? 'open' : 'closed'}`;
+    const [floatingPortalElement, setFloatingPortalElement] =
+        useState<HTMLDivElement | null>(null);
 
-    const enableChecklist = () => {
-        if (!hasChecklist) {
-            setItems([{ text: '', is_checked: false, sort_order: 0 }]);
-        }
-    };
+    const setFloatingPortalRef = useCallback((node: HTMLDivElement | null) => {
+        setFloatingPortalElement(node);
+    }, []);
 
     const deleteLabel = (label: LabelType) => {
         if (
@@ -106,16 +113,19 @@ export function NoteFormDialog({
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent
+        <Sheet open={open} onOpenChange={onOpenChange}>
+            <SheetContent
+                side="right"
                 className={cn(
-                    'gap-0 overflow-hidden rounded-2xl border-0 p-0 shadow-xl sm:max-w-lg [&>button]:hidden',
+                    'flex h-full w-full flex-col gap-0 border-0 p-0 sm:max-w-xl md:max-w-2xl [&>button]:hidden',
                     noteColorClassName(color),
                 )}
+                onInteractOutside={keepEditorOverlayOpen}
+                onPointerDownOutside={keepEditorOverlayOpen}
             >
-                <DialogTitle className="sr-only">
+                <SheetTitle className="sr-only">
                     {isEditing ? 'Edit note' : 'New note'}
-                </DialogTitle>
+                </SheetTitle>
 
                 {isEditing && confirmDelete ? (
                     <div className="space-y-4 p-5">
@@ -150,24 +160,24 @@ export function NoteFormDialog({
                         {...(isEditing
                             ? NoteController.update.form(note.id)
                             : NoteController.store.form())}
-                        transform={(data) => ({
-                            ...data,
-                            items: items.map((item, index) => ({
-                                ...(item.id ? { id: item.id } : {}),
-                                text: item.text,
-                                is_checked: item.is_checked,
-                                sort_order: index,
-                            })),
-                            label_ids: selectedLabelIds,
-                            label_names: newLabelNames,
-                            reminder_at: reminderAt || null,
-                        })}
+                        transform={(data) =>
+                            ({
+                                ...data,
+                                content: content ?? null,
+                                color,
+                                is_pinned: isPinned,
+                                label_ids: selectedLabelIds,
+                                label_names: newLabelNames,
+                                reminder_at: reminderAt || null,
+                            }) as Record<string, FormDataConvertible>
+                        }
                         options={{ preserveScroll: true }}
                         onSuccess={() => onOpenChange(false)}
+                        className="flex min-h-0 flex-1 flex-col"
                     >
                         {({ processing, errors }) => (
-                            <>
-                                <div className="flex items-start gap-2 px-4 pt-4">
+                            <div className="note-editor-shell relative flex min-h-0 flex-1 flex-col">
+                                <div className="relative z-10 flex shrink-0 items-start gap-2 px-4 pt-4">
                                     <Input
                                         id="note-title"
                                         name="title"
@@ -181,7 +191,6 @@ export function NoteFormDialog({
                                     <div className="flex shrink-0 items-center gap-0.5">
                                         <NoteToolbarButton
                                             type="button"
-                                            active={isPinned}
                                             aria-label={
                                                 isPinned
                                                     ? 'Unpin note'
@@ -194,7 +203,14 @@ export function NoteFormDialog({
                                                 )
                                             }
                                         >
-                                            <Pin className="size-4 rotate-45" />
+                                            <NotePinIcon
+                                                filled={isPinned}
+                                                className={
+                                                    isPinned
+                                                        ? 'text-foreground'
+                                                        : undefined
+                                                }
+                                            />
                                         </NoteToolbarButton>
                                         <NoteToolbarButton
                                             type="button"
@@ -206,34 +222,26 @@ export function NoteFormDialog({
                                     </div>
                                 </div>
 
-                                <input
-                                    type="hidden"
-                                    name="is_pinned"
-                                    value={isPinned ? '1' : '0'}
-                                />
-
-                                <textarea
-                                    id="note-body"
-                                    name="body"
-                                    defaultValue={note?.body ?? ''}
-                                    placeholder="Take a note…"
-                                    rows={hasChecklist ? 3 : 6}
-                                    className={cn(
-                                        fieldClassName,
-                                        'placeholder:text-muted-foreground min-h-24 w-full resize-none py-2 text-sm outline-none',
-                                    )}
-                                />
-
-                                {hasChecklist ? (
-                                    <NoteChecklistEditor
-                                        items={items}
-                                        onChange={setItems}
-                                        variant="inline"
+                                <div className="min-h-0 flex-1 overflow-y-auto">
+                                    <NoteBlockView
+                                        key={editorKey}
+                                        content={content}
+                                        onChange={setContent}
+                                        floatingPortalElement={
+                                            floatingPortalElement
+                                        }
+                                        className="note-block-view--sheet"
                                     />
-                                ) : null}
+                                </div>
+
+                                <div
+                                    ref={setFloatingPortalRef}
+                                    className="note-editor-floating-portal"
+                                    aria-hidden="true"
+                                />
 
                                 {(reminderAt || selectedLabelCount > 0) && (
-                                    <div className="flex flex-wrap gap-1.5 px-4 pb-2">
+                                    <div className="flex shrink-0 flex-wrap gap-1.5 px-4 pb-2">
                                         {reminderAt ? (
                                             <Badge
                                                 variant="secondary"
@@ -276,26 +284,22 @@ export function NoteFormDialog({
 
                                 <InputError
                                     message={errors.title}
-                                    className="px-4"
+                                    className="shrink-0 px-4"
                                 />
                                 <InputError
-                                    message={errors.body}
-                                    className="px-4"
-                                />
-                                <InputError
-                                    message={errors.items}
-                                    className="px-4"
+                                    message={errors.content}
+                                    className="shrink-0 px-4"
                                 />
                                 <InputError
                                     message={errors.reminder_at}
-                                    className="px-4"
+                                    className="shrink-0 px-4"
                                 />
                                 <InputError
                                     message={errors.color}
-                                    className="px-4"
+                                    className="shrink-0 px-4"
                                 />
 
-                                <div className="mt-2 flex items-center gap-1 border-t border-black/5 px-2 py-2 dark:border-white/10">
+                                <div className="mt-auto flex shrink-0 items-center gap-1 border-t border-black/5 px-2 py-2 dark:border-white/10">
                                     <Popover>
                                         <PopoverTrigger asChild>
                                             <NoteToolbarButton
@@ -316,14 +320,6 @@ export function NoteFormDialog({
                                             />
                                         </PopoverContent>
                                     </Popover>
-
-                                    <NoteToolbarButton
-                                        aria-label="Checklist"
-                                        active={hasChecklist}
-                                        onClick={enableChecklist}
-                                    >
-                                        <ListChecks className="size-4" />
-                                    </NoteToolbarButton>
 
                                     <Popover>
                                         <PopoverTrigger asChild>
@@ -475,11 +471,11 @@ export function NoteFormDialog({
                                         </Button>
                                     </div>
                                 </div>
-                            </>
+                            </div>
                         )}
                     </Form>
                 )}
-            </DialogContent>
-        </Dialog>
+            </SheetContent>
+        </Sheet>
     );
 }

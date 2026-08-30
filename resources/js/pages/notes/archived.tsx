@@ -2,7 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 import { NoteCard } from '@/components/notes/note-card';
-import { NoteFormDialog } from '@/components/notes/note-form-dialog';
+import { NoteFormSheet } from '@/components/notes/note-form-sheet';
 import { Button } from '@/components/ui/button';
 import { archived as notesArchived, index as notesIndex } from '@/routes/notes';
 import type { Label } from '@/types/label';
@@ -14,12 +14,12 @@ type NotesArchivedProps = {
 };
 
 export default function NotesArchived({ notes, labels }: NotesArchivedProps) {
-    const [dialogOpen, setDialogOpen] = useState(false);
+    const [sheetOpen, setSheetOpen] = useState(false);
     const [activeNote, setActiveNote] = useState<Note | null>(null);
 
     const openEdit = (note: Note) => {
         setActiveNote(note);
-        setDialogOpen(true);
+        setSheetOpen(true);
     };
 
     return (
@@ -66,9 +66,9 @@ export default function NotesArchived({ notes, labels }: NotesArchivedProps) {
                 )}
             </div>
 
-            <NoteFormDialog
-                open={dialogOpen}
-                onOpenChange={setDialogOpen}
+            <NoteFormSheet
+                open={sheetOpen}
+                onOpenChange={setSheetOpen}
                 note={activeNote}
                 availableLabels={labels}
                 archivedView

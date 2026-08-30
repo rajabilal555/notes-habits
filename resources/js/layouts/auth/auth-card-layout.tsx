@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { StickyNote } from 'lucide-react';
+import AppLogoIcon from '@/components/app-logo-icon';
 import type { PropsWithChildren } from 'react';
 import {
     Card,
@@ -26,8 +26,8 @@ export default function AuthCardLayout({
                     href={home()}
                     className="flex items-center gap-2 self-center font-medium"
                 >
-                    <div className="flex h-9 w-9 items-center justify-center">
-                        <StickyNote className="size-9" />
+                    <div className="flex items-center justify-center">
+                        <AppLogoIcon className="h-9 w-auto" title="N&H" />
                     </div>
                 </Link>
 

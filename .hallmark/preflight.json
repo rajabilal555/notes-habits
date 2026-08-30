@@ -1,0 +1,8 @@
+{
+    "date": "2026-08-30",
+    "fontStack": "Instrument Sans (app shell via vite bunny)",
+    "palette": "OKLCH shadcn tokens in resources/css/app.css",
+    "motion": "motion-cut (tw-animate-css only)",
+    "spacing": "Tailwind v4 @theme + 0.625rem radius",
+    "framework": "Laravel 13 + Inertia v3 + React 19 + Tailwind v4"
+}

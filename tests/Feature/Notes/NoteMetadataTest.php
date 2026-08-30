@@ -81,7 +81,6 @@ test('users can update note color and pin state', function () {
 
     $this->patch(route('notes.update', $note), [
         'title' => $note->title,
-        'body' => $note->body,
         'color' => 'mint',
         'is_pinned' => true,
     ])->assertRedirect(route('notes.index'));

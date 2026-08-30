@@ -96,7 +96,7 @@ class Habit extends Model
     }
 
     /**
-     * @return list<array{date: string, scheduled: bool, completed: bool}>
+     * @return list<list<array{date: string, scheduled: bool, completed: bool, future: bool}>>
      */
     public function heatmapWeeks(int $weeks = self::HEATMAP_WEEKS): array
     {

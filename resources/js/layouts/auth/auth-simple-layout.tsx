@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { StickyNote } from 'lucide-react';
+import AppLogoIcon from '@/components/app-logo-icon';
 import { home } from '@/routes';
 import type { AuthLayoutProps } from '@/types';
 
@@ -17,8 +17,11 @@ export default function AuthSimpleLayout({
                             href={home()}
                             className="flex flex-col items-center gap-2 font-medium"
                         >
-                            <div className="mb-1 flex h-9 w-9 items-center justify-center rounded-md">
-                                <StickyNote className="size-9" />
+                            <div className="mb-1 flex items-center justify-center">
+                                <AppLogoIcon
+                                    className="h-9 w-auto"
+                                    title="N&H"
+                                />
                             </div>
                             <span className="sr-only">{title}</span>
                         </Link>

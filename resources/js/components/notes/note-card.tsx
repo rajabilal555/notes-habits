@@ -1,12 +1,15 @@
 import { router } from '@inertiajs/react';
-import { ArchiveRestore, GripVertical, Pin } from 'lucide-react';
+import { ArchiveRestore, GripVertical } from 'lucide-react';
 import type { DraggableAttributes } from '@dnd-kit/core';
 import NoteController from '@/actions/App/Http/Controllers/NoteController';
-import NoteItemController from '@/actions/App/Http/Controllers/NoteItemController';
+import { NoteBlockPreview } from '@/components/notes/note-block-preview';
+import { NotePinIcon } from '@/components/notes/note-pin-icon';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { noteColorClassName } from '@/lib/note-colors';
-import { checklistProgress } from '@/lib/note-checklist';
+import {
+    blockChecklistProgress,
+    hasNoteContent,
+} from '@/lib/note-block-progress';
 import { cn } from '@/lib/utils';
 import type { Note } from '@/types/note';
 
@@ -23,10 +26,10 @@ export function NoteCard({
     dragHandleRef?: (element: HTMLElement | null) => void;
     dragHandleProps?: DraggableAttributes & Record<string, unknown>;
 }) {
-    const preview = note.body?.trim() || '';
     const title = note.title?.trim() || 'Untitled';
-    const { checked, total } = checklistProgress(note.items);
+    const { checked, total } = blockChecklistProgress(note.content);
     const hasItems = total > 0;
+    const showContent = hasNoteContent(note.content);
 
     return (
         <div
@@ -40,7 +43,7 @@ export function NoteCard({
                 }
             }}
             className={cn(
-                'border-sidebar-border/70 dark:border-sidebar-border flex min-h-32 cursor-pointer flex-col gap-2 rounded-xl border p-4 text-left transition-colors',
+                'border-sidebar-border/70 dark:border-sidebar-border flex min-h-40 cursor-pointer flex-col gap-2 rounded-xl border p-4 text-left transition-colors',
                 noteColorClassName(note.color),
                 'focus-visible:ring-ring hover:brightness-[0.98] focus-visible:ring-2 focus-visible:outline-none dark:hover:brightness-110',
             )}
@@ -91,72 +94,23 @@ export function NoteCard({
                         </button>
                     ) : null}
                     {note.is_pinned ? (
-                        <Pin
-                            className="text-muted-foreground size-4 rotate-45"
-                            aria-label="Pinned"
+                        <NotePinIcon
+                            filled
+                            className="text-foreground"
+                            label="Pinned"
                         />
                     ) : null}
                 </div>
             </div>
 
-            {hasItems ? (
-                <ul className="space-y-1.5">
-                    {note.items.slice(0, 5).map((item) => (
-                        <li
-                            key={item.id}
-                            className="flex items-start gap-2 text-sm"
-                            onClick={(event) => event.stopPropagation()}
-                        >
-                            <Checkbox
-                                checked={item.is_checked}
-                                onCheckedChange={() =>
-                                    router.patch(
-                                        NoteItemController.update.url([
-                                            note.id,
-                                            item.id,
-                                        ]),
-                                        { is_checked: !item.is_checked },
-                                        { preserveScroll: true },
-                                    )
-                                }
-                                className="mt-0.5"
-                                aria-label={`Toggle ${item.text}`}
-                            />
-                            <span
-                                className={cn(
-                                    'line-clamp-2 flex-1',
-                                    item.is_checked &&
-                                        'text-muted-foreground line-through',
-                                )}
-                            >
-                                {item.text}
-                            </span>
-                        </li>
-                    ))}
-                    {total > 5 ? (
-                        <li className="text-muted-foreground text-xs">
-                            +{total - 5} more
-                        </li>
-                    ) : null}
-                </ul>
-            ) : null}
-
-            {preview ? (
-                <p
-                    className={cn(
-                        'text-muted-foreground line-clamp-4 text-sm whitespace-pre-wrap',
-                        !note.title?.trim() &&
-                            !hasItems &&
-                            'text-foreground line-clamp-8',
-                    )}
-                >
-                    {preview}
-                </p>
-            ) : !hasItems ? (
-                <p className="text-muted-foreground text-sm italic">
-                    Empty note
-                </p>
-            ) : null}
+            {showContent ? (
+                <NoteBlockPreview
+                    content={note.content}
+                    className="max-h-52 overflow-hidden"
+                />
+            ) : (
+                <p className="text-muted-foreground text-sm italic">Empty note</p>
+            )}
 
             {note.labels.length > 0 ? (
                 <div className="flex flex-wrap gap-1">

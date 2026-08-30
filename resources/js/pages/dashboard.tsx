@@ -14,7 +14,6 @@ import type { Habit } from '@/types/habit';
 type DueTodayNote = {
     id: number;
     title: string | null;
-    body: string | null;
     reminder_at: string;
 };
 

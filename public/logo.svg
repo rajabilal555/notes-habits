@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-    <rect width="64" height="64" rx="16" fill="#F6F3E8"/>
-    <g transform="translate(4 12)" clip-path="url(#nh-fav-bars)" fill="#2A2E3A">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 40" fill="none">
+    <title>N&amp;H</title>
+    <g clip-path="url(#nh-logo-bars)" fill="#2A2E3A">
         <path d="M1 0h10v40H1z"/>
         <path d="M1 0h13L32 40H19L1 0z"/>
         <path d="M22 0h10v40H22z"/>
@@ -8,7 +8,7 @@
         <path d="M45 0h10v40H45z"/>
     </g>
     <defs>
-        <clipPath id="nh-fav-bars">
+        <clipPath id="nh-logo-bars">
             <rect x="0" y="0" width="56" height="7.2" rx="2"/>
             <rect x="0" y="10.93" width="56" height="7.2" rx="2"/>
             <rect x="0" y="21.87" width="56" height="7.2" rx="2"/>

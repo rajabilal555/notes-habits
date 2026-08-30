@@ -1,9 +1,9 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { Archive, Plus } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
-import { CommandMenuTrigger } from '@/components/command-menu-trigger';
 import { NoteCard } from '@/components/notes/note-card';
-import { NoteFormDialog } from '@/components/notes/note-form-dialog';
+import { NoteFormSheet } from '@/components/notes/note-form-sheet';
+import { NotesSearchInput } from '@/components/notes/notes-search-input';
 import { SortableNotesGrid } from '@/components/notes/sortable-notes-grid';
 import { NotesMasonryGrid } from '@/components/notes/notes-masonry-grid';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ import {
     useRegisterCommandActions,
     type CommandMenuAction,
 } from '@/hooks/use-command-menu';
+import { filterNotesByQuery } from '@/lib/note-search';
 import { archived as notesArchived, index as notesIndex } from '@/routes/notes';
 import type { Label } from '@/types/label';
 import type { Note } from '@/types/note';
@@ -33,17 +34,25 @@ export default function NotesIndex({
     labels,
     selectedLabelId,
 }: NotesIndexProps) {
-    const [dialogOpen, setDialogOpen] = useState(false);
+    const [sheetOpen, setSheetOpen] = useState(false);
     const [activeNote, setActiveNote] = useState<Note | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const filteredNotes = useMemo(
+        () => filterNotesByQuery(notes, searchQuery),
+        [notes, searchQuery],
+    );
+    const isSearching = searchQuery.trim() !== '';
+    const canReorder = !selectedLabelId && !isSearching;
 
     const openCreate = useCallback(() => {
         setActiveNote(null);
-        setDialogOpen(true);
+        setSheetOpen(true);
     }, []);
 
     const openEdit = (note: Note) => {
         setActiveNote(note);
-        setDialogOpen(true);
+        setSheetOpen(true);
     };
 
     const commandActions = useMemo<CommandMenuAction[]>(
@@ -133,10 +142,17 @@ export default function NotesIndex({
                             </Button>
                         </div>
                     </div>
-                    <CommandMenuTrigger className="sm:max-w-md" />
+                    <NotesSearchInput
+                        value={searchQuery}
+                        onChange={setSearchQuery}
+                    />
                     {selectedLabelId && notes.length > 0 ? (
                         <p className="text-muted-foreground text-sm">
                             Clear the label filter to rearrange notes.
+                        </p>
+                    ) : isSearching && notes.length > 0 ? (
+                        <p className="text-muted-foreground text-sm">
+                            Clear search to rearrange notes.
                         </p>
                     ) : null}
                 </header>
@@ -151,9 +167,26 @@ export default function NotesIndex({
                             New note
                         </Button>
                     </div>
-                ) : selectedLabelId ? (
+                ) : filteredNotes.length === 0 ? (
+                    <div className="border-sidebar-border/70 dark:border-sidebar-border flex flex-1 flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-8 text-center">
+                        <p className="text-muted-foreground text-sm">
+                            No notes match &ldquo;{searchQuery.trim()}&rdquo;.
+                        </p>
+                        <Button
+                            variant="outline"
+                            onClick={() => setSearchQuery('')}
+                        >
+                            Clear search
+                        </Button>
+                    </div>
+                ) : canReorder ? (
+                    <SortableNotesGrid
+                        notes={filteredNotes}
+                        onEditNote={openEdit}
+                    />
+                ) : (
                     <NotesMasonryGrid>
-                        {notes.map((note) => (
+                        {filteredNotes.map((note) => (
                             <NoteCard
                                 key={note.id}
                                 note={note}
@@ -161,14 +194,12 @@ export default function NotesIndex({
                             />
                         ))}
                     </NotesMasonryGrid>
-                ) : (
-                    <SortableNotesGrid notes={notes} onEditNote={openEdit} />
                 )}
             </div>
 
-            <NoteFormDialog
-                open={dialogOpen}
-                onOpenChange={setDialogOpen}
+            <NoteFormSheet
+                open={sheetOpen}
+                onOpenChange={setSheetOpen}
                 note={activeNote}
                 availableLabels={labels}
             />

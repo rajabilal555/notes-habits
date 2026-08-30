@@ -19,7 +19,7 @@ class NoteFactory extends Factory
         return [
             'user_id' => User::factory(),
             'title' => fake()->optional()->sentence(),
-            'body' => fake()->optional()->paragraph(),
+            'content' => null,
             'color' => 'default',
             'is_pinned' => false,
             'archived_at' => null,
@@ -37,6 +37,16 @@ class NoteFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'is_pinned' => true,
+        ]);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $content
+     */
+    public function withContent(array $content): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'content' => $content,
         ]);
     }
 }

@@ -4,6 +4,7 @@
 
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../node_modules/@blocknote/shadcn';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -140,4 +141,87 @@
     body {
         @apply bg-background text-foreground;
     }
+
+    .bn-shadcn * {
+        @apply outline-ring/50;
+    }
+}
+
+.note-block-preview {
+    @apply text-muted-foreground pointer-events-none text-sm leading-relaxed;
+
+    :is(p, ul, ol, h1, h2, h3, h4, h5, h6) {
+        @apply m-0;
+    }
+
+    :is(p, ul, ol) + :is(p, ul, ol) {
+        @apply mt-1.5;
+    }
+
+    ul,
+    ol {
+        @apply pl-4;
+    }
+
+    li {
+        @apply my-0.5;
+    }
+
+    ul.contains-task-list {
+        @apply list-none pl-0;
+    }
+
+    li.task-list-item {
+        @apply flex items-start gap-2;
+    }
+
+    li.task-list-item input[type='checkbox'] {
+        @apply mt-0.5 shrink-0;
+    }
+
+    :is(h1, h2, h3) {
+        @apply text-foreground text-sm font-medium;
+    }
+
+    strong {
+        @apply text-foreground font-medium;
+    }
+}
+
+.note-block-view--sheet .bn-container {
+    overflow: visible;
+    min-height: 100%;
+}
+
+.note-editor-shell {
+    position: relative;
+}
+
+.note-block-view--sheet .bn-editor {
+    min-height: 100%;
+    background-color: transparent;
+    padding-inline: 3.25rem 1rem;
+}
+
+.note-block-view--sheet .bn-toolbar,
+.note-block-view--sheet .bn-side-menu,
+.note-block-view--sheet .bn-table-handle,
+.note-block-view--sheet .bn-table-cell-handle {
+    z-index: 10;
+}
+
+/* Anchor for BlockNote floating UI — zero-size, no pointer capture. */
+.note-editor-floating-portal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 60;
+    height: 0;
+    width: 0;
+    overflow: visible;
+    pointer-events: none;
+}
+
+.note-editor-floating-portal > * {
+    pointer-events: auto;
 }

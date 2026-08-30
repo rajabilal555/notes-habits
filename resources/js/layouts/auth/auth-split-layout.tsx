@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { StickyNote } from 'lucide-react';
+import AppLogoIcon from '@/components/app-logo-icon';
 import { home } from '@/routes';
 import type { AuthLayoutProps } from '@/types';
 
@@ -18,7 +18,10 @@ export default function AuthSplitLayout({
                     href={home()}
                     className="relative z-20 flex items-center text-lg font-medium"
                 >
-                    <StickyNote className="mr-2 size-8 text-white" />
+                    <AppLogoIcon
+                        className="mr-2 h-7 w-auto text-white"
+                        title="N&H"
+                    />
                     {name}
                 </Link>
             </div>
@@ -28,7 +31,10 @@ export default function AuthSplitLayout({
                         href={home()}
                         className="relative z-20 flex items-center justify-center lg:hidden"
                     >
-                        <StickyNote className="h-10 sm:h-12" />
+                        <AppLogoIcon
+                            className="h-10 w-auto sm:h-12"
+                            title="N&H"
+                        />
                     </Link>
                     <div className="flex flex-col items-start gap-2 text-left sm:items-center sm:text-center">
                         <h1 className="text-xl font-medium">{title}</h1>

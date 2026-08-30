@@ -12,7 +12,6 @@ test('users can attach existing and new labels to notes', function () {
 
     $this->post(route('notes.store'), [
         'title' => 'Project brief',
-        'body' => 'Details',
         'label_ids' => [$work->id],
         'label_names' => ['Personal'],
     ])->assertRedirect(route('notes.index'));

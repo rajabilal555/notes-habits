@@ -12,6 +12,8 @@ test('authenticated users can create, list, update, and delete notes', function 
     $user = User::factory()->create();
     $this->actingAs($user);
 
+    $content = sampleNoteContent('Milk and eggs');
+
     $this->get(route('notes.index'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
@@ -21,7 +23,7 @@ test('authenticated users can create, list, update, and delete notes', function 
 
     $this->post(route('notes.store'), [
         'title' => 'Groceries',
-        'body' => 'Milk and eggs',
+        'content' => $content,
     ])->assertRedirect(route('notes.index'));
 
     $note = Note::query()->first();
@@ -29,7 +31,7 @@ test('authenticated users can create, list, update, and delete notes', function 
     expect($note)->not->toBeNull()
         ->and($note->user_id)->toBe($user->id)
         ->and($note->title)->toBe('Groceries')
-        ->and($note->body)->toBe('Milk and eggs');
+        ->and($note->content)->toBe($content);
 
     $this->get(route('notes.index'))
         ->assertInertia(fn (Assert $page) => $page
@@ -37,14 +39,16 @@ test('authenticated users can create, list, update, and delete notes', function 
             ->where('notes.0.title', 'Groceries'),
         );
 
+    $updatedContent = sampleNoteContent('Milk, eggs, bread');
+
     $this->patch(route('notes.update', $note), [
         'title' => 'Shopping',
-        'body' => 'Milk, eggs, bread',
+        'content' => $updatedContent,
     ])->assertRedirect(route('notes.index'));
 
     expect($note->fresh())
         ->title->toBe('Shopping')
-        ->body->toBe('Milk, eggs, bread');
+        ->content->toBe($updatedContent);
 
     $this->delete(route('notes.destroy', $note))
         ->assertRedirect(route('notes.index'));
@@ -61,7 +65,7 @@ test('users cannot modify another users notes', function () {
 
     $this->patch(route('notes.update', $note), [
         'title' => 'Hacked',
-        'body' => 'Nope',
+        'content' => sampleNoteContent('Nope'),
     ])->assertForbidden();
 
     $this->delete(route('notes.destroy', $note))
@@ -69,3 +73,29 @@ test('users cannot modify another users notes', function () {
 
     expect($note->fresh()->title)->not->toBe('Hacked');
 });
+
+/**
+ * @return list<array<string, mixed>>
+ */
+function sampleNoteContent(string $text): array
+{
+    return [
+        [
+            'id' => 'paragraph-1',
+            'type' => 'paragraph',
+            'props' => [
+                'textColor' => 'default',
+                'backgroundColor' => 'default',
+                'textAlignment' => 'left',
+            ],
+            'content' => [
+                [
+                    'type' => 'text',
+                    'text' => $text,
+                    'styles' => [],
+                ],
+            ],
+            'children' => [],
+        ],
+    ];
+}
