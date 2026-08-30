@@ -1,0 +1,32 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: .deploy/Dockerfile
+      args:
+        PHP_VERSION: php-8.5
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN}
+      LARAVEL_PATH: /srv/app
+      SERVER_NAME: :80
+      DB_DATABASE: /srv/app/storage/app/database.sqlite
+    volumes:
+      - app-storage:/srv/app/storage
+    labels:
+      - traefik.http.routers.notes-habits-web.rule=Host(`${APP_DOMAIN}`)
+      - traefik.http.routers.notes-habits-web.entrypoints=web
+      - traefik.http.routers.notes-habits-web.middlewares=redirect-to-https@file
+      - traefik.http.routers.notes-habits-web.service=notes-habits
+
+      - traefik.http.routers.notes-habits-websecure.rule=Host(`${APP_DOMAIN}`)
+      - traefik.http.routers.notes-habits-websecure.entrypoints=websecure
+      - traefik.http.routers.notes-habits-websecure.service=notes-habits
+      - traefik.http.routers.notes-habits-websecure.tls.certresolver=letsencrypt-dns
+
+      - traefik.http.services.notes-habits.loadbalancer.server.port=80
+
+volumes:
+  app-storage:

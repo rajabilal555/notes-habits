@@ -1,0 +1,44 @@
+{
+	skip_install_trust
+
+	{$CADDY_GLOBAL_OPTIONS}
+
+	frankenphp {
+		{$FRANKENPHP_CONFIG}
+	}
+}
+
+{$CADDY_EXTRA_CONFIG}
+
+{$SERVER_NAME::80} {
+	root {$SERVER_ROOT:public/}
+
+	@websockets {
+		header Connection *upgrade*
+		header Upgrade websocket
+	}
+	reverse_proxy @websockets 127.0.0.1:6001 {
+		header_down -X-Powered-By
+	}
+
+	# Block PHP execution in storage directory - uploaded files must never be executed
+	@storagePhp path_regexp storage_php ^/storage/.*\.php$
+	respond @storagePhp 403
+
+	redir /index.php / 308
+	redir /index.php/ / 308
+	route /index.php/* {
+		uri strip_prefix /index.php
+		redir {path} 308
+	}
+
+	encode zstd br gzip
+	header -X-Powered-By
+
+	{$CADDY_SERVER_EXTRA_DIRECTIVES}
+
+	php_server {
+		try_files {path} index.php
+		resolve_root_symlink
+	}
+}
