@@ -28,6 +28,26 @@ test('users can set and clear note reminders', function () {
     expect($note->fresh()->reminder_at)->toBeNull();
 });
 
+test('users can set a reminder without resubmitting other note fields', function () {
+    Carbon::setTestNow('2026-08-30 09:00:00');
+
+    $user = User::factory()->create();
+    $note = Note::factory()->for($user)->create([
+        'title' => 'Groceries',
+        'reminder_at' => null,
+    ]);
+
+    $this->actingAs($user);
+
+    $this->patch(route('notes.update', $note), [
+        'reminder_at' => '2026-08-30 14:30:00',
+    ])->assertRedirect(route('notes.index'));
+
+    expect($note->fresh())
+        ->title->toBe('Groceries')
+        ->reminder_at?->format('Y-m-d H:i:s')->toBe('2026-08-30 14:30:00');
+});
+
 test('dashboard lists notes due today ordered by reminder time', function () {
     Carbon::setTestNow('2026-08-30 09:00:00');
 

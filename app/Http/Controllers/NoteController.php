@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ReorderNotesRequest;
+use App\Http\Requests\StoreNoteImageRequest;
 use App\Http\Requests\StoreNoteRequest;
 use App\Http\Requests\UpdateNoteRequest;
 use App\Models\Note;
@@ -10,6 +11,8 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -106,6 +109,25 @@ class NoteController extends Controller
         }
 
         return back();
+    }
+
+    /**
+     * @return array{url: string}
+     */
+    public function storeImage(StoreNoteImageRequest $request): array
+    {
+        /** @var UploadedFile $image */
+        $image = $request->file('image');
+
+        $path = $image->storeAs(
+            'notes/'.$request->user()->id,
+            Str::uuid()->toString().'.'.$image->guessExtension(),
+            'public',
+        );
+
+        return [
+            'url' => '/storage/'.$path,
+        ];
     }
 
     public function destroy(Request $request, Note $note): RedirectResponse

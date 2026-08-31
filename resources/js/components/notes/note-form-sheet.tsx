@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import NoteController from '@/actions/App/Http/Controllers/NoteController';
 import LabelController from '@/actions/App/Http/Controllers/LabelController';
 import InputError from '@/components/input-error';
-import { NoteBlockView } from '@/components/notes/note-block-view';
+import { NoteEditor } from '@/components/notes/note-editor';
 import { NoteColorPicker } from '@/components/notes/note-color-picker';
 import { NoteLabelPickerContent } from '@/components/notes/note-label-picker-content';
 import { NotePinIcon } from '@/components/notes/note-pin-icon';
@@ -19,14 +19,9 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
-import {
-    Sheet,
-    SheetContent,
-    SheetTitle,
-} from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { formatReminder, toDatetimeLocalValue } from '@/lib/datetime-local';
-import { isNoteBlockOverlayTarget } from '@/lib/note-block-schema';
-import type { NoteBlock } from '@/lib/note-block-progress';
+import type { NoteContent } from '@/lib/note-content';
 import type { NoteColorId } from '@/lib/note-colors';
 import { noteColorClassName } from '@/lib/note-colors';
 import { cn } from '@/lib/utils';
@@ -44,15 +39,6 @@ type NoteFormSheetProps = {
 const fieldClassName =
     'border-0 bg-transparent px-4 shadow-none focus-visible:ring-0';
 
-const keepEditorOverlayOpen = (event: {
-    detail: { originalEvent: Event };
-    preventDefault: () => void;
-}) => {
-    if (isNoteBlockOverlayTarget(event.detail.originalEvent.target)) {
-        event.preventDefault();
-    }
-};
-
 export function NoteFormSheet({
     open,
     onOpenChange,
@@ -64,7 +50,7 @@ export function NoteFormSheet({
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [color, setColor] = useState<NoteColorId>('default');
     const [isPinned, setIsPinned] = useState(false);
-    const [content, setContent] = useState<NoteBlock[] | null>(null);
+    const [content, setContent] = useState<NoteContent | null>(null);
     const [selectedLabelIds, setSelectedLabelIds] = useState<number[]>([]);
     const [newLabelNames, setNewLabelNames] = useState<string[]>([]);
     const [reminderAt, setReminderAt] = useState('');
@@ -85,12 +71,6 @@ export function NoteFormSheet({
 
     const selectedLabelCount = selectedLabelIds.length + newLabelNames.length;
     const editorKey = `${note?.id ?? 'new'}-${open ? 'open' : 'closed'}`;
-    const [floatingPortalElement, setFloatingPortalElement] =
-        useState<HTMLDivElement | null>(null);
-
-    const setFloatingPortalRef = useCallback((node: HTMLDivElement | null) => {
-        setFloatingPortalElement(node);
-    }, []);
 
     const deleteLabel = (label: LabelType) => {
         if (
@@ -120,8 +100,6 @@ export function NoteFormSheet({
                     'flex h-full w-full flex-col gap-0 border-0 p-0 sm:max-w-xl md:max-w-2xl [&>button]:hidden',
                     noteColorClassName(color),
                 )}
-                onInteractOutside={keepEditorOverlayOpen}
-                onPointerDownOutside={keepEditorOverlayOpen}
             >
                 <SheetTitle className="sr-only">
                     {isEditing ? 'Edit note' : 'New note'}
@@ -223,22 +201,13 @@ export function NoteFormSheet({
                                 </div>
 
                                 <div className="min-h-0 flex-1 overflow-y-auto">
-                                    <NoteBlockView
+                                    <NoteEditor
                                         key={editorKey}
                                         content={content}
                                         onChange={setContent}
-                                        floatingPortalElement={
-                                            floatingPortalElement
-                                        }
-                                        className="note-block-view--sheet"
+                                        className="note-editor--sheet"
                                     />
                                 </div>
-
-                                <div
-                                    ref={setFloatingPortalRef}
-                                    className="note-editor-floating-portal"
-                                    aria-hidden="true"
-                                />
 
                                 {(reminderAt || selectedLabelCount > 0) && (
                                     <div className="flex shrink-0 flex-wrap gap-1.5 px-4 pb-2">

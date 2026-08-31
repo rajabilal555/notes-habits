@@ -13,6 +13,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('notes', [NoteController::class, 'index'])->name('notes.index');
     Route::get('notes/archived', [NoteController::class, 'archived'])->name('notes.archived');
     Route::post('notes', [NoteController::class, 'store'])->name('notes.store');
+    Route::post('notes/images', [NoteController::class, 'storeImage'])->name('notes.images.store');
     Route::patch('notes/reorder', [NoteController::class, 'reorder'])->name('notes.reorder');
     Route::patch('notes/{note}', [NoteController::class, 'update'])->name('notes.update');
     Route::patch('notes/{note}/archive', [NoteController::class, 'archive'])->name('notes.archive');

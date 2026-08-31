@@ -1,15 +1,14 @@
 import { router } from '@inertiajs/react';
-import { ArchiveRestore, GripVertical } from 'lucide-react';
+import { ArchiveRestore, Bell, GripVertical } from 'lucide-react';
 import type { DraggableAttributes } from '@dnd-kit/core';
 import NoteController from '@/actions/App/Http/Controllers/NoteController';
-import { NoteBlockPreview } from '@/components/notes/note-block-preview';
+import { NoteCardActions } from '@/components/notes/note-card-actions';
+import { NoteContentPreview } from '@/components/notes/note-content-preview';
 import { NotePinIcon } from '@/components/notes/note-pin-icon';
 import { Badge } from '@/components/ui/badge';
+import { formatReminder } from '@/lib/datetime-local';
 import { noteColorClassName } from '@/lib/note-colors';
-import {
-    blockChecklistProgress,
-    hasNoteContent,
-} from '@/lib/note-block-progress';
+import { blockChecklistProgress, hasNoteContent } from '@/lib/note-content';
 import { cn } from '@/lib/utils';
 import type { Note } from '@/types/note';
 
@@ -43,7 +42,7 @@ export function NoteCard({
                 }
             }}
             className={cn(
-                'border-sidebar-border/70 dark:border-sidebar-border flex min-h-40 cursor-pointer flex-col gap-2 rounded-xl border p-4 text-left transition-colors',
+                'group border-sidebar-border/70 dark:border-sidebar-border relative flex min-h-40 cursor-pointer flex-col gap-2 rounded-xl border p-4 text-left transition-colors',
                 noteColorClassName(note.color),
                 'focus-visible:ring-ring hover:brightness-[0.98] focus-visible:ring-2 focus-visible:outline-none dark:hover:brightness-110',
             )}
@@ -76,6 +75,17 @@ export function NoteCard({
                             {checked}/{total}
                         </span>
                     ) : null}
+                    {note.reminder_at ? (
+                        <span
+                            className="text-muted-foreground flex items-center gap-1 text-xs"
+                            title={formatReminder(note.reminder_at)}
+                        >
+                            <Bell className="size-3.5 shrink-0" />
+                            <span className="max-w-24 truncate">
+                                {formatReminder(note.reminder_at)}
+                            </span>
+                        </span>
+                    ) : null}
                     {archived ? (
                         <button
                             type="button"
@@ -104,12 +114,14 @@ export function NoteCard({
             </div>
 
             {showContent ? (
-                <NoteBlockPreview
+                <NoteContentPreview
                     content={note.content}
                     className="max-h-52 overflow-hidden"
                 />
             ) : (
-                <p className="text-muted-foreground text-sm italic">Empty note</p>
+                <p className="text-muted-foreground text-sm italic">
+                    Empty note
+                </p>
             )}
 
             {note.labels.length > 0 ? (
@@ -125,6 +137,12 @@ export function NoteCard({
                     ))}
                 </div>
             ) : null}
+
+            <NoteCardActions
+                note={note}
+                title={title}
+                className="mt-auto justify-end pt-1"
+            />
 
             <span className="sr-only">Edit {title}</span>
         </div>

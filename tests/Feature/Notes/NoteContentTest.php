@@ -4,14 +4,11 @@ use App\Models\Note;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
-test('users can create and update notes with blocknote content', function () {
+test('users can create and update notes with tiptap content', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
-    $content = sampleChecklistContent([
-        ['text' => 'Milk', 'checked' => false],
-        ['text' => 'Eggs', 'checked' => false],
-    ]);
+    $content = sampleParagraphContent('Buy milk');
 
     $this->post(route('notes.store'), [
         'title' => 'Groceries',
@@ -25,14 +22,12 @@ test('users can create and update notes with blocknote content', function () {
     $this->get(route('notes.index'))
         ->assertInertia(fn (Assert $page) => $page
             ->has('notes', 1)
-            ->where('notes.0.content.0.type', 'checkListItem')
-            ->where('notes.0.content.0.content.0.text', 'Milk'),
+            ->where('notes.0.content.type', 'doc')
+            ->where('notes.0.content.content.0.type', 'paragraph')
+            ->where('notes.0.content.content.0.content.0.text', 'Buy milk'),
         );
 
-    $updatedContent = sampleChecklistContent([
-        ['text' => 'Milk', 'checked' => true],
-        ['text' => 'Bread', 'checked' => false],
-    ]);
+    $updatedContent = sampleParagraphContent('Buy bread');
 
     $this->patch(route('notes.update', $note), [
         'title' => 'Groceries',
@@ -42,17 +37,14 @@ test('users can create and update notes with blocknote content', function () {
     expect($note->fresh()->content)->toBe($updatedContent);
 });
 
-test('users can create and update notes with blocknote table content', function () {
+test('users can create and update notes with blockquote content', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
-    $content = sampleTableContent([
-        ['ahey', null],
-        [null, null],
-    ]);
+    $content = sampleBlockquoteContent('Stay hungry, stay foolish.');
 
     $this->post(route('notes.store'), [
-        'title' => 'Table note',
+        'title' => 'Quote',
         'content' => $content,
     ])->assertRedirect(route('notes.index'));
 
@@ -60,17 +52,13 @@ test('users can create and update notes with blocknote table content', function 
 
     expect($note?->content)->toBe($content);
 
-    $updatedContent = sampleTableContent([
-        ['ahey', 'updated'],
-        ['row two', null],
-    ]);
-
-    $this->patch(route('notes.update', $note), [
-        'title' => 'Table note',
-        'content' => $updatedContent,
-    ])->assertRedirect(route('notes.index'));
-
-    expect($note->fresh()->content)->toBe($updatedContent);
+    $this->get(route('notes.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('notes', 1)
+            ->where('notes.0.content.content.0.type', 'blockquote')
+            ->where('notes.0.content.content.0.content.0.type', 'paragraph')
+            ->where('notes.0.content.content.0.content.0.content.0.text', 'Stay hungry, stay foolish.'),
+        );
 });
 
 test('notes can be created without content', function () {
@@ -87,80 +75,42 @@ test('notes can be created without content', function () {
 });
 
 /**
- * @param  list<array{text: string, checked: bool}>  $items
- * @return list<array<string, mixed>>
+ * @return array<string, mixed>
  */
-function sampleChecklistContent(array $items): array
+function sampleParagraphContent(string $text): array
 {
-    return array_map(
-        fn (array $item, int $index) => [
-            'id' => 'checklist-'.$index,
-            'type' => 'checkListItem',
-            'props' => [
-                'textColor' => 'default',
-                'backgroundColor' => 'default',
-                'textAlignment' => 'left',
-                'checked' => $item['checked'],
-            ],
-            'content' => [
-                [
-                    'type' => 'text',
-                    'text' => $item['text'],
-                    'styles' => [],
+    return [
+        'type' => 'doc',
+        'content' => [
+            [
+                'type' => 'paragraph',
+                'content' => [
+                    ['type' => 'text', 'text' => $text],
                 ],
             ],
-            'children' => [],
         ],
-        $items,
-        array_keys($items),
-    );
+    ];
 }
 
 /**
- * @param  list<list<string|null>>  $rows
- * @return list<array<string, mixed>>
+ * @return array<string, mixed>
  */
-function sampleTableContent(array $rows): array
+function sampleBlockquoteContent(string $text): array
 {
     return [
-        [
-            'id' => 'table-1',
-            'type' => 'table',
-            'props' => [
-                'textColor' => 'default',
-            ],
-            'content' => [
-                'type' => 'tableContent',
-                'columnWidths' => array_fill(0, count($rows[0] ?? []), null),
-                'rows' => array_map(
-                    fn (array $cells) => [
-                        'cells' => array_map(
-                            fn (?string $text) => [
-                                'type' => 'tableCell',
-                                'content' => $text === null || $text === ''
-                                    ? []
-                                    : [
-                                        [
-                                            'type' => 'text',
-                                            'text' => $text,
-                                            'styles' => [],
-                                        ],
-                                    ],
-                                'props' => [
-                                    'colspan' => 1,
-                                    'rowspan' => 1,
-                                    'backgroundColor' => 'default',
-                                    'textColor' => 'default',
-                                    'textAlignment' => 'left',
-                                ],
-                            ],
-                            $cells,
-                        ),
+        'type' => 'doc',
+        'content' => [
+            [
+                'type' => 'blockquote',
+                'content' => [
+                    [
+                        'type' => 'paragraph',
+                        'content' => [
+                            ['type' => 'text', 'text' => $text],
+                        ],
                     ],
-                    $rows,
-                ),
+                ],
             ],
-            'children' => [],
         ],
     ];
 }
