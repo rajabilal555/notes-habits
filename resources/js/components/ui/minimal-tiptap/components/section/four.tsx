@@ -3,10 +3,10 @@ import type { Editor } from "@tiptap/react"
 import type { FormatAction } from "../../types"
 import type { toggleVariants } from "@/components/ui/toggle"
 import type { VariantProps } from "class-variance-authority"
-import { CaretDownIcon, ListBulletIcon } from "@radix-ui/react-icons"
+import { CaretDownIcon, CheckboxIcon, ListBulletIcon } from "@radix-ui/react-icons"
 import { ToolbarSection } from "../toolbar-section"
 
-type ListItemAction = "orderedList" | "bulletList"
+type ListItemAction = "orderedList" | "bulletList" | "taskList"
 interface ListItem extends FormatAction {
   value: ListItemAction
 }
@@ -41,6 +41,16 @@ const formatActions: ListItem[] = [
     canExecute: (editor) =>
       editor.can().chain().focus().toggleBulletList().run(),
     shortcuts: ["mod", "shift", "8"],
+  },
+  {
+    value: "taskList",
+    label: "Checklist",
+    icon: <CheckboxIcon className="size-5" />,
+    isActive: (editor) => editor.isActive("taskList"),
+    action: (editor) => editor.chain().focus().toggleTaskList().run(),
+    canExecute: (editor) =>
+      editor.can().chain().focus().toggleTaskList().run(),
+    shortcuts: ["mod", "shift", "9"],
   },
 ]
 

@@ -53,7 +53,7 @@ const Toolbar = ({ editor }: { editor: Editor }) => (
 
       <SectionFour
         editor={editor}
-        activeActions={["orderedList", "bulletList"]}
+        activeActions={["orderedList", "bulletList", "taskList"]}
         mainActionCount={0}
       />
 

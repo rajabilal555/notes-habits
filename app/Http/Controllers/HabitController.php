@@ -8,6 +8,7 @@ use App\Models\Habit;
 use App\Models\HabitCompletion;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -43,7 +44,7 @@ class HabitController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Habit updated.')]);
 
-        return to_route('habits.index');
+        return back();
     }
 
     public function destroy(Request $request, Habit $habit): RedirectResponse
@@ -54,22 +55,29 @@ class HabitController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Habit deleted.')]);
 
-        return to_route('habits.index');
+        return back();
     }
 
     public function toggleCompletion(Request $request, Habit $habit): RedirectResponse
     {
         $this->authorize('update', $habit);
 
-        $today = today();
-        $completion = $habit->completions()->whereDate('completed_date', $today)->first();
+        $validated = $request->validate([
+            'date' => ['sometimes', 'date', 'before_or_equal:today'],
+        ]);
+
+        $date = isset($validated['date'])
+            ? Carbon::parse($validated['date'])->startOfDay()
+            : today();
+
+        $completion = $habit->completions()->whereDate('completed_date', $date)->first();
 
         if ($completion) {
             $completion->delete();
         } else {
             HabitCompletion::query()->create([
                 'habit_id' => $habit->id,
-                'completed_date' => $today,
+                'completed_date' => $date,
             ]);
         }
 
@@ -84,12 +92,14 @@ class HabitController extends Controller
         return [
             'id' => $habit->id,
             'name' => $habit->name,
+            'description' => $habit->description,
             'cadence' => $habit->cadence->value,
             'weekdays' => $habit->weekdayNumbers(),
             'streak' => $habit->currentStreak(),
             'completed_today' => $habit->isCompletedOn(today()),
             'scheduled_today' => $habit->isScheduledOn(today()),
-            'heatmap' => $habit->heatmapWeeks(),
+            'heatmap' => $habit->heatmapWeeks(Habit::HEATMAP_GLANCE_WEEKS),
+            'history_heatmap' => $habit->heatmapWeeks(Habit::HEATMAP_HISTORY_WEEKS),
         ];
     }
 
@@ -101,6 +111,7 @@ class HabitController extends Controller
     {
         return [
             'name' => $validated['name'],
+            'description' => $validated['description'] ?? null,
             'cadence' => $validated['cadence'],
             'weekdays_mask' => $validated['cadence'] === 'weekdays'
                 ? Habit::maskFromWeekdays($validated['weekdays'] ?? [])

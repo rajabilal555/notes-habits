@@ -1,11 +1,11 @@
-import { Head, router } from '@inertiajs/react';
-import { Flame, Pencil, Plus } from 'lucide-react';
+import { Head } from '@inertiajs/react';
+import { Flame, Plus } from 'lucide-react';
 import { useState } from 'react';
-import HabitController from '@/actions/App/Http/Controllers/HabitController';
-import { HabitFormDialog } from '@/components/habits/habit-form-dialog';
+import { HabitFormSheet } from '@/components/habits/habit-form-sheet';
 import { HabitHeatmapStrip } from '@/components/habits/habit-heatmap-strip';
+import { HabitTodayToggle } from '@/components/habits/habit-today-toggle';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import { cn } from '@/lib/utils';
 import { index as habitsIndex } from '@/routes/habits';
 import type { Habit } from '@/types/habit';
 
@@ -14,17 +14,17 @@ type HabitsIndexProps = {
 };
 
 export default function HabitsIndex({ habits }: HabitsIndexProps) {
-    const [dialogOpen, setDialogOpen] = useState(false);
-    const [activeHabit, setActiveHabit] = useState<Habit | null>(null);
+    const [sheetOpen, setSheetOpen] = useState(false);
+    const [activeHabitId, setActiveHabitId] = useState<number | null>(null);
 
     const openCreate = () => {
-        setActiveHabit(null);
-        setDialogOpen(true);
+        setActiveHabitId(null);
+        setSheetOpen(true);
     };
 
-    const openEdit = (habit: Habit) => {
-        setActiveHabit(habit);
-        setDialogOpen(true);
+    const openHabit = (habitId: number) => {
+        setActiveHabitId(habitId);
+        setSheetOpen(true);
     };
 
     return (
@@ -57,65 +57,66 @@ export default function HabitsIndex({ habits }: HabitsIndexProps) {
                         </Button>
                     </div>
                 ) : (
-                    <div className="flex flex-col gap-4">
+                    <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(15.5rem,1fr))]">
                         {habits.map((habit) => (
                             <article
                                 key={habit.id}
-                                className="border-sidebar-border/70 dark:border-sidebar-border rounded-xl border p-4"
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => openHabit(habit.id)}
+                                onKeyDown={(event) => {
+                                    if (
+                                        event.key === 'Enter' ||
+                                        event.key === ' '
+                                    ) {
+                                        event.preventDefault();
+                                        openHabit(habit.id);
+                                    }
+                                }}
+                                className="border-sidebar-border/70 dark:border-sidebar-border hover:bg-muted/30 flex cursor-pointer flex-col rounded-xl border p-4 transition-colors"
                             >
-                                <div className="flex flex-wrap items-start justify-between gap-4">
-                                    <div className="flex min-w-0 flex-1 items-start gap-3">
-                                        <Checkbox
-                                            checked={habit.completed_today}
-                                            onCheckedChange={() =>
-                                                router.patch(
-                                                    HabitController.toggleCompletion.url(
-                                                        habit.id,
-                                                    ),
-                                                    {},
-                                                    {
-                                                        preserveScroll: true,
-                                                    },
-                                                )
-                                            }
-                                            className="mt-1"
-                                            aria-label={`Mark ${habit.name} complete for today`}
-                                        />
-                                        <div className="min-w-0 flex-1 space-y-1">
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <h2 className="font-medium">
-                                                    {habit.name}
-                                                </h2>
-                                                <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
-                                                    <Flame className="size-3.5" />
-                                                    {habit.streak} day streak
-                                                </span>
-                                            </div>
-                                            <p className="text-muted-foreground text-xs">
-                                                {habit.cadence === 'daily'
-                                                    ? 'Every day'
-                                                    : 'Selected weekdays'}
-                                                {habit.completed_today
-                                                    ? ' · done today'
-                                                    : habit.scheduled_today
-                                                      ? ' · due today'
-                                                      : ' · not scheduled today'}
-                                            </p>
-                                        </div>
+                                <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0 flex-1 space-y-1">
+                                        <h2
+                                            className={cn(
+                                                'truncate font-medium',
+                                                habit.completed_today &&
+                                                    'text-muted-foreground line-through',
+                                            )}
+                                        >
+                                            {habit.name}
+                                        </h2>
+                                        <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
+                                            <Flame className="size-3.5 shrink-0" />
+                                            {habit.streak} day streak
+                                        </span>
+                                        <p className="text-muted-foreground text-xs">
+                                            {habit.cadence === 'daily'
+                                                ? 'Every day'
+                                                : 'Selected weekdays'}
+                                            {habit.completed_today
+                                                ? ' · done today'
+                                                : habit.scheduled_today
+                                                  ? ' · due today'
+                                                  : ' · not scheduled today'}
+                                        </p>
                                     </div>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => openEdit(habit)}
-                                        aria-label={`Edit ${habit.name}`}
-                                    >
-                                        <Pencil className="size-4" />
-                                    </Button>
+                                    <HabitTodayToggle
+                                        habitId={habit.id}
+                                        habitName={habit.name}
+                                        completed={habit.completed_today}
+                                        scheduled={habit.scheduled_today}
+                                        reloadOnly={['habits']}
+                                    />
                                 </div>
-                                <div className="mt-4 overflow-x-auto">
+                                <div
+                                    className="mt-4 flex justify-center"
+                                    onClick={(event) => event.stopPropagation()}
+                                >
                                     <HabitHeatmapStrip
+                                        habitId={habit.id}
                                         heatmap={habit.heatmap}
+                                        reloadOnly={['habits']}
                                     />
                                 </div>
                             </article>
@@ -124,10 +125,11 @@ export default function HabitsIndex({ habits }: HabitsIndexProps) {
                 )}
             </div>
 
-            <HabitFormDialog
-                open={dialogOpen}
-                onOpenChange={setDialogOpen}
-                habit={activeHabit}
+            <HabitFormSheet
+                open={sheetOpen}
+                onOpenChange={setSheetOpen}
+                habits={habits}
+                habitId={activeHabitId}
             />
         </>
     );

@@ -106,10 +106,7 @@ export function blockChecklistProgress(
                 continue;
             }
 
-            if (
-                'type' in node &&
-                (node.type === 'taskItem' || node.type === 'taskList')
-            ) {
+            if ('type' in node && node.type === 'taskItem') {
                 checklistItems.push(node as { attrs?: { checked?: boolean } });
             }
 

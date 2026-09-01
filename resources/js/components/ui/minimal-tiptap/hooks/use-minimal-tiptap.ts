@@ -39,37 +39,29 @@ async function fakeuploader(file: File): Promise<string> {
   return fileToBase64(file)
 }
 
-async function resolveUploadedImageSrc(
-  file: File,
-  uploader?: (file: File) => Promise<string>,
-): Promise<string> {
-  if (uploader) {
-    return uploader(file)
-  }
-
-  return fakeuploader(file)
-}
-
-async function insertUploadedImages(
+function insertImageNodes(
   editor: Editor,
   files: File[],
   pos: number,
-  uploader?: (file: File) => Promise<string>,
-): Promise<void> {
-  const nodes = await Promise.all(
-    files.map(async (file) => ({
-      type: "image" as const,
-      attrs: {
-        id: randomId(),
-        src: await resolveUploadedImageSrc(file, uploader),
-        alt: file.name,
-        title: file.name,
-        fileName: file.name,
-      },
-    })),
-  )
+): void {
+  editor.commands.insertContentAt(
+    pos,
+    files.map((image) => {
+      const blobUrl = URL.createObjectURL(image)
+      const id = randomId()
 
-  editor.chain().focus().insertContentAt(pos, nodes).run()
+      return {
+        type: "image",
+        attrs: {
+          id,
+          src: blobUrl,
+          alt: image.name,
+          title: image.name,
+          fileName: image.name,
+        },
+      }
+    }),
+  )
 }
 
 export const createMinimalTiptapExtensions = ({
@@ -117,10 +109,10 @@ export const createMinimalTiptapExtensions = ({
     maxFileSize: 5 * 1024 * 1024,
     allowBase64: true,
     uploadFn: async (file) => {
-      return resolveUploadedImageSrc(file, uploader)
+      return uploader ? await uploader(file) : await fakeuploader(file)
     },
     onToggle(editor, files, pos) {
-      void insertUploadedImages(editor, files, pos, uploader)
+      insertImageNodes(editor, files, pos)
     },
     onImageRemoved() {},
     onValidationError(errors) {
@@ -159,15 +151,10 @@ export const createMinimalTiptapExtensions = ({
     allowedMimeTypes: ["image/*"],
     maxFileSize: 5 * 1024 * 1024,
     onDrop: (editor, files, pos) => {
-      void insertUploadedImages(editor, files, pos, uploader)
+      insertImageNodes(editor, files, pos)
     },
     onPaste: (editor, files) => {
-      void insertUploadedImages(
-        editor,
-        files,
-        editor.state.selection.from,
-        uploader,
-      )
+      insertImageNodes(editor, files, editor.state.selection.from)
     },
     onValidationError: (errors) => {
       errors.forEach((error) => {
@@ -187,6 +174,12 @@ export const createMinimalTiptapExtensions = ({
   ResetMarksOnEnter,
   CodeBlockLowlight,
   Placeholder.configure({ placeholder: () => placeholder }),
+  TaskList.configure({
+    HTMLAttributes: { class: "task-list-node" },
+  }),
+  TaskItem.configure({
+    nested: true,
+  }),
   // Add MarkdownPaste extension when output is markdown
   ...(output === "markdown" ? [
     // Markdown with GFM support for tables, task lists, etc.
@@ -194,13 +187,6 @@ export const createMinimalTiptapExtensions = ({
       markedOptions: {
         gfm: true,
       },
-    }),
-    // Task lists (checkboxes)
-    TaskList.configure({
-      HTMLAttributes: { class: "task-list-node" },
-    }),
-    TaskItem.configure({
-      nested: true,
     }),
     // Tables
     TableKit.configure({

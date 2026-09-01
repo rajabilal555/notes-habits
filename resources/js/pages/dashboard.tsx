@@ -1,15 +1,20 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { Flame, Plus } from 'lucide-react';
-import HabitController from '@/actions/App/Http/Controllers/HabitController';
+import { Head, Link } from '@inertiajs/react';
+import { Bell, Flame, Plus } from 'lucide-react';
+import { useState } from 'react';
 import { DashboardSection } from '@/components/dashboard-section';
+import { HabitFormSheet } from '@/components/habits/habit-form-sheet';
 import { HabitHeatmapStrip } from '@/components/habits/habit-heatmap-strip';
+import { HabitTodayToggle } from '@/components/habits/habit-today-toggle';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { formatReminder } from '@/lib/datetime-local';
+import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import { index as habitsIndex } from '@/routes/habits';
 import { index as notesIndex } from '@/routes/notes';
 import type { Habit } from '@/types/habit';
+
+const cardGridClassName =
+    'grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(15.5rem,1fr))]';
 
 type DueTodayNote = {
     id: number;
@@ -23,6 +28,14 @@ type DashboardProps = {
 };
 
 export default function Dashboard({ dueToday, habits }: DashboardProps) {
+    const [sheetOpen, setSheetOpen] = useState(false);
+    const [activeHabitId, setActiveHabitId] = useState<number | null>(null);
+
+    const openHabit = (habitId: number) => {
+        setActiveHabitId(habitId);
+        setSheetOpen(true);
+    };
+
     return (
         <>
             <Head title="Dashboard" />
@@ -36,26 +49,25 @@ export default function Dashboard({ dueToday, habits }: DashboardProps) {
                             Nothing due today.
                         </p>
                     ) : (
-                        <ul className="space-y-2">
+                        <div className={cardGridClassName}>
                             {dueToday.map((note) => (
-                                <li
+                                <Link
                                     key={note.id}
-                                    className="border-sidebar-border/70 dark:border-sidebar-border flex items-center justify-between gap-3 rounded-lg border px-3 py-2"
+                                    href={notesIndex()}
+                                    className="border-sidebar-border/70 dark:border-sidebar-border hover:bg-muted/30 flex flex-col rounded-xl border p-4 transition-colors"
                                 >
-                                    <div className="min-w-0">
-                                        <p className="truncate font-medium">
-                                            {note.title?.trim() || 'Untitled'}
-                                        </p>
-                                        <p className="text-muted-foreground text-xs">
+                                    <div className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs">
+                                        <Bell className="size-3.5 shrink-0" />
+                                        <span>
                                             {formatReminder(note.reminder_at)}
-                                        </p>
+                                        </span>
                                     </div>
-                                    <Button variant="outline" size="sm" asChild>
-                                        <Link href={notesIndex()}>Notes</Link>
-                                    </Button>
-                                </li>
+                                    <h3 className="line-clamp-2 font-medium">
+                                        {note.title?.trim() || 'Untitled'}
+                                    </h3>
+                                </Link>
                             ))}
-                        </ul>
+                        </div>
                     )}
                 </DashboardSection>
 
@@ -82,50 +94,83 @@ export default function Dashboard({ dueToday, habits }: DashboardProps) {
                             No habits yet.
                         </p>
                     ) : (
-                        <div className="space-y-4">
+                        <div className={cardGridClassName}>
                             {habits.map((habit) => (
                                 <article
                                     key={habit.id}
-                                    className="border-sidebar-border/70 dark:border-sidebar-border rounded-lg border p-3"
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={() => openHabit(habit.id)}
+                                    onKeyDown={(event) => {
+                                        if (
+                                            event.key === 'Enter' ||
+                                            event.key === ' '
+                                        ) {
+                                            event.preventDefault();
+                                            openHabit(habit.id);
+                                        }
+                                    }}
+                                    className="border-sidebar-border/70 dark:border-sidebar-border hover:bg-muted/30 flex cursor-pointer flex-col rounded-xl border p-4 transition-colors"
                                 >
-                                    <div className="mb-3 flex items-center justify-between gap-3">
-                                        <div className="flex min-w-0 items-center gap-2">
-                                            <Checkbox
-                                                checked={habit.completed_today}
-                                                onCheckedChange={() =>
-                                                    router.patch(
-                                                        HabitController.toggleCompletion.url(
-                                                            habit.id,
-                                                        ),
-                                                        {},
-                                                        {
-                                                            preserveScroll: true,
-                                                        },
-                                                    )
-                                                }
-                                                aria-label={`Mark ${habit.name} complete for today`}
-                                            />
-                                            <div className="min-w-0">
-                                                <p className="truncate font-medium">
-                                                    {habit.name}
-                                                </p>
-                                                <p className="text-muted-foreground inline-flex items-center gap-1 text-xs">
-                                                    <Flame className="size-3" />
-                                                    {habit.streak} day streak
-                                                </p>
-                                            </div>
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="min-w-0 flex-1 space-y-1">
+                                            <h3
+                                                className={cn(
+                                                    'truncate font-medium',
+                                                    habit.completed_today &&
+                                                        'text-muted-foreground line-through',
+                                                )}
+                                            >
+                                                {habit.name}
+                                            </h3>
+                                            <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
+                                                <Flame className="size-3.5 shrink-0" />
+                                                {habit.streak} day streak
+                                            </span>
+                                            <p className="text-muted-foreground text-xs">
+                                                {habit.cadence === 'daily'
+                                                    ? 'Every day'
+                                                    : 'Selected weekdays'}
+                                                {habit.completed_today
+                                                    ? ' · done today'
+                                                    : habit.scheduled_today
+                                                      ? ' · due today'
+                                                      : ' · not scheduled today'}
+                                            </p>
                                         </div>
+                                        <HabitTodayToggle
+                                            habitId={habit.id}
+                                            habitName={habit.name}
+                                            completed={habit.completed_today}
+                                            scheduled={habit.scheduled_today}
+                                            reloadOnly={['habits']}
+                                        />
                                     </div>
-                                    <HabitHeatmapStrip
-                                        heatmap={habit.heatmap}
-                                        compact
-                                    />
+                                    <div
+                                        className="mt-4 flex justify-center"
+                                        onClick={(event) =>
+                                            event.stopPropagation()
+                                        }
+                                    >
+                                        <HabitHeatmapStrip
+                                            habitId={habit.id}
+                                            heatmap={habit.heatmap}
+                                            reloadOnly={['habits']}
+                                        />
+                                    </div>
                                 </article>
                             ))}
                         </div>
                     )}
                 </DashboardSection>
             </div>
+
+            <HabitFormSheet
+                open={sheetOpen}
+                onOpenChange={setSheetOpen}
+                habits={habits}
+                habitId={activeHabitId}
+            />
         </>
     );
 }

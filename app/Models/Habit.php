@@ -17,15 +17,17 @@ use Illuminate\Support\Carbon;
  * @property int $user_id
  * @property string $name
  * @property HabitCadence $cadence
- * @property int $weekdays_mask
+ * @property string|null $description
  */
-#[Fillable(['user_id', 'name', 'cadence', 'weekdays_mask'])]
+#[Fillable(['user_id', 'name', 'description', 'cadence', 'weekdays_mask'])]
 class Habit extends Model
 {
     /** @use HasFactory<HabitFactory> */
     use HasFactory;
 
-    public const HEATMAP_WEEKS = 26;
+    public const HEATMAP_GLANCE_WEEKS = 2;
+
+    public const HEATMAP_HISTORY_WEEKS = 12;
 
     /**
      * @return array<string, string>
@@ -98,7 +100,7 @@ class Habit extends Model
     /**
      * @return list<list<array{date: string, scheduled: bool, completed: bool, future: bool}>>
      */
-    public function heatmapWeeks(int $weeks = self::HEATMAP_WEEKS): array
+    public function heatmapWeeks(int $weeks = self::HEATMAP_GLANCE_WEEKS): array
     {
         $start = today()->subWeeks($weeks - 1)->startOfWeek(Carbon::SUNDAY);
         $grid = [];

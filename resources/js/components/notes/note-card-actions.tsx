@@ -2,6 +2,7 @@ import { router } from '@inertiajs/react';
 import { Bell, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import NoteController from '@/actions/App/Http/Controllers/NoteController';
+import { NotePinIcon } from '@/components/notes/note-pin-icon';
 import { NoteToolbarButton } from '@/components/notes/note-toolbar-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -56,11 +57,27 @@ export function NoteCardActions({
         <div
             className={cn(
                 'flex items-center gap-0.5 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100',
+                note.is_pinned && 'opacity-100',
                 className,
             )}
             onClick={(event) => event.stopPropagation()}
             onKeyDown={(event) => event.stopPropagation()}
         >
+            <NoteToolbarButton
+                aria-label={note.is_pinned ? `Unpin ${title}` : `Pin ${title}`}
+                active={note.is_pinned}
+                className="size-8"
+                onClick={() =>
+                    router.patch(
+                        NoteController.update.url(note.id),
+                        { is_pinned: !note.is_pinned },
+                        { preserveScroll: true },
+                    )
+                }
+            >
+                <NotePinIcon filled={note.is_pinned} />
+            </NoteToolbarButton>
+
             <Popover open={reminderOpen} onOpenChange={setReminderOpen}>
                 <PopoverTrigger asChild>
                     <NoteToolbarButton

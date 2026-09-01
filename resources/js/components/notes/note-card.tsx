@@ -4,7 +4,6 @@ import type { DraggableAttributes } from '@dnd-kit/core';
 import NoteController from '@/actions/App/Http/Controllers/NoteController';
 import { NoteCardActions } from '@/components/notes/note-card-actions';
 import { NoteContentPreview } from '@/components/notes/note-content-preview';
-import { NotePinIcon } from '@/components/notes/note-pin-icon';
 import { Badge } from '@/components/ui/badge';
 import { formatReminder } from '@/lib/datetime-local';
 import { noteColorClassName } from '@/lib/note-colors';
@@ -102,13 +101,6 @@ export function NoteCard({
                         >
                             <ArchiveRestore className="size-4" />
                         </button>
-                    ) : null}
-                    {note.is_pinned ? (
-                        <NotePinIcon
-                            filled
-                            className="text-foreground"
-                            label="Pinned"
-                        />
                     ) : null}
                 </div>
             </div>

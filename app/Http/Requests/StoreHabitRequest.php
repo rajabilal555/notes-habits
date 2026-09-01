@@ -16,6 +16,7 @@ class StoreHabitRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:2000'],
             'cadence' => ['required', 'string', Rule::in(array_column(HabitCadence::cases(), 'value'))],
             'weekdays' => ['required_if:cadence,weekdays', 'array'],
             'weekdays.*' => ['integer', 'between:0,6'],

@@ -3,6 +3,7 @@
 import { generateHTML } from '@tiptap/html';
 
 import { createMinimalTiptapExtensions } from '@/components/ui/minimal-tiptap/hooks/use-minimal-tiptap';
+import '@/components/ui/minimal-tiptap/styles/index.css';
 import {
     hasNoteContent,
     normalizeNoteContent,
@@ -32,8 +33,15 @@ export function NoteContentPreview({
 
     return (
         <div
-            className={cn('note-content-preview', className)}
-            dangerouslySetInnerHTML={{ __html: html }}
-        />
+            className={cn(
+                'note-content-preview minimal-tiptap-editor',
+                className,
+            )}
+        >
+            <div
+                className="ProseMirror text-base break-words"
+                dangerouslySetInnerHTML={{ __html: html }}
+            />
+        </div>
     );
 }

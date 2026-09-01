@@ -143,22 +143,18 @@
 }
 
 .note-content-preview {
-    @apply text-muted-foreground pointer-events-none text-sm leading-relaxed;
+    @apply pointer-events-none;
 
-    :is(p, ul, ol, h1, h2, h3, h4, h5, h6, blockquote) {
-        @apply m-0;
+    &.minimal-tiptap-editor .ProseMirror {
+        @apply max-w-full;
     }
 
-    :is(p, ul, ol, blockquote) + :is(p, ul, ol, blockquote) {
-        @apply mt-1.5;
+    &.minimal-tiptap-editor .ProseMirror img {
+        @apply h-auto max-w-full rounded-lg;
     }
 
-    :is(h1, h2, h3) {
-        @apply text-foreground text-sm font-medium;
-    }
-
-    strong {
-        @apply text-foreground font-medium;
+    &.minimal-tiptap-editor .ProseMirror input[type='checkbox'] {
+        @apply pointer-events-none;
     }
 }
 
