@@ -159,17 +159,13 @@
 }
 
 .note-editor--sheet {
-    display: flex;
-    min-height: 100%;
-    height: 100%;
-}
-
-.note-editor--sheet [data-orientation='vertical'] {
-    min-height: 100%;
-    height: 100%;
+    @apply flex min-h-full w-full flex-col;
 }
 
 .note-editor--sheet .minimal-tiptap-editor {
-    min-height: 0;
-    flex: 1;
+    @apply flex min-h-0 flex-1 flex-col;
+}
+
+.note-editor--sheet .minimal-tiptap-editor .ProseMirror {
+    @apply min-h-full flex-1 cursor-text;
 }

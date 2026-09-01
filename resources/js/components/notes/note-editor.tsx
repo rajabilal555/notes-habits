@@ -15,11 +15,7 @@ type NoteEditorProps = {
     onChange?: (content: NoteContent | null) => void;
 };
 
-export function NoteEditor({
-    content,
-    className,
-    onChange,
-}: NoteEditorProps) {
+export function NoteEditor({ content, className, onChange }: NoteEditorProps) {
     return (
         <MinimalTiptapEditor
             value={content ? normalizeNoteContent(content) : undefined}
@@ -31,9 +27,7 @@ export function NoteEditor({
                 const json = value as NoteContent;
 
                 onChange(
-                    hasNoteContent(json)
-                        ? normalizeNoteContent(json)
-                        : null,
+                    hasNoteContent(json) ? normalizeNoteContent(json) : null,
                 );
             }}
             output="json"
@@ -44,7 +38,7 @@ export function NoteEditor({
                 'note-editor border-0 bg-transparent shadow-none focus-within:border-transparent focus-within:ring-0',
                 className,
             )}
-            editorContentClassName="min-h-0 flex-1 overflow-y-auto px-4 pb-4 text-base"
+            editorContentClassName="flex min-h-0 flex-1 flex-col px-4 pb-4 text-base"
         />
     );
 }

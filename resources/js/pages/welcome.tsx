@@ -46,17 +46,17 @@ export default function Welcome() {
                         />
                         <p className="landing__hero-lede">
                             A small open-source app for jotting reminders and
-                            keeping daily habits honest. Self-host it, or run
-                            it locally.
+                            keeping daily habits honest. Self-host it, or run it
+                            locally.
                         </p>
                         {!auth.user && (
                             <div className="landing__hero-actions">
-                                <Link
-                                    href={register()}
-                                    className="btn"
-                                >
+                                <Link href={register()} className="btn">
                                     Create account
-                                    <span className="btn__arrow" aria-hidden="true">
+                                    <span
+                                        className="btn__arrow"
+                                        aria-hidden="true"
+                                    >
                                         →
                                     </span>
                                 </Link>
@@ -86,9 +86,7 @@ export default function Welcome() {
                         <li className="landing__step">
                             <span className="landing__stage">1.0</span>
                             <div className="landing__step-body">
-                                <h3 className="landing__step-title">
-                                    Capture
-                                </h3>
+                                <h3 className="landing__step-title">Capture</h3>
                                 <p className="landing__step-text">
                                     Write notes with labels, colours, and
                                     reminders. Pin what matters, archive what

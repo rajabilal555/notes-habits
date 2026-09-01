@@ -57,7 +57,7 @@ export default function HabitsIndex({ habits }: HabitsIndexProps) {
                         </Button>
                     </div>
                 ) : (
-                    <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(15.5rem,1fr))]">
+                    <div className="grid [grid-template-columns:repeat(auto-fill,minmax(15.5rem,1fr))] gap-4">
                         {habits.map((habit) => (
                             <article
                                 key={habit.id}

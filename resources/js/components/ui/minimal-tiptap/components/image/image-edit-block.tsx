@@ -3,16 +3,10 @@ import type { Editor } from "@tiptap/react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { fileToBase64 } from "../../utils"
-import type { UploadReturnType } from "../../extensions/image/image"
 
 interface ImageEditBlockProps {
   editor: Editor
   close: () => void
-}
-
-function resolveUploadResult(result: UploadReturnType): string {
-  return typeof result === "string" ? result : result.src
 }
 
 export const ImageEditBlock: React.FC<ImageEditBlockProps> = ({
@@ -33,23 +27,9 @@ export const ImageEditBlock: React.FC<ImageEditBlockProps> = ({
         return
       }
 
-      const uploadFn = editor.extensionManager.extensions.find(
-        (extension) => extension.name === "image",
-      )?.options.uploadFn as
-        | ((file: File, editor: Editor) => Promise<UploadReturnType>)
-        | undefined
-
-      const contentBucket = await Promise.all(
-        Array.from(files).map(async (file) => {
-          if (uploadFn) {
-            return { src: resolveUploadResult(await uploadFn(file, editor)) }
-          }
-
-          return { src: await fileToBase64(file) }
-        }),
+      editor.commands.setImages(
+        Array.from(files).map((file) => ({ src: file })),
       )
-
-      editor.commands.setImages(contentBucket)
       close()
     },
     [editor, close],

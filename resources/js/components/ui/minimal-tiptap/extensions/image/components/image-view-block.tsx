@@ -18,6 +18,7 @@ const MIN_HEIGHT = 120
 const MIN_WIDTH = 120
 
 interface ImageState {
+  src: string
   isServerUploading: boolean
   imageLoaded: boolean
   isZoomed: boolean
@@ -25,12 +26,9 @@ interface ImageState {
   naturalSize: ElementDimensions
 }
 
-const normalizeUploadResponse = (
-  res: UploadReturnType,
-  existingId?: string | null,
-) => ({
+const normalizeUploadResponse = (res: UploadReturnType) => ({
   src: typeof res === "string" ? res : res.src,
-  id: typeof res === "string" ? (existingId ?? randomId()) : res.id,
+  id: typeof res === "string" ? randomId() : res.id,
 })
 
 export const ImageViewBlock: React.FC<NodeViewProps> = ({
@@ -46,7 +44,6 @@ export const ImageViewBlock: React.FC<NodeViewProps> = ({
     fileName,
   } = node.attrs
   const uploadAttemptedRef = React.useRef(false)
-  const dimensionsLoadedForSrcRef = React.useRef<string | null>(null)
 
   const initSrc = React.useMemo(() => {
     if (typeof initialSrc === "string") {
@@ -57,14 +54,12 @@ export const ImageViewBlock: React.FC<NodeViewProps> = ({
   }, [initialSrc])
 
   const [imageState, setImageState] = React.useState<ImageState>({
+    src: initSrc,
     isServerUploading: false,
     imageLoaded: false,
     isZoomed: false,
     error: false,
-    naturalSize: {
-      width: initialWidth ?? 0,
-      height: initialHeight ?? 0,
-    },
+    naturalSize: { width: initialWidth, height: initialHeight },
   })
 
   const containerRef = React.useRef<HTMLDivElement>(null)
@@ -80,9 +75,7 @@ export const ImageViewBlock: React.FC<NodeViewProps> = ({
   )
 
   const aspectRatio =
-    imageState.naturalSize.width > 0 && imageState.naturalSize.height > 0
-      ? imageState.naturalSize.width / imageState.naturalSize.height
-      : 1
+    imageState.naturalSize.width / imageState.naturalSize.height
   const maxWidth = MAX_HEIGHT * aspectRatio
   const containerMaxWidth = containerRef.current
     ? parseFloat(
@@ -96,7 +89,7 @@ export const ImageViewBlock: React.FC<NodeViewProps> = ({
     useImageActions({
       editor,
       node,
-      src: initSrc,
+      src: imageState.src,
       onViewClick: (isZoomed) =>
         setImageState((prev) => ({ ...prev, isZoomed })),
     })
@@ -135,19 +128,11 @@ export const ImageViewBlock: React.FC<NodeViewProps> = ({
         imageLoaded: true,
       }))
 
-      if (dimensionsLoadedForSrcRef.current === initSrc) {
-        return
-      }
-
-      dimensionsLoadedForSrcRef.current = initSrc
-
-      if (initialWidth && initialHeight) {
-        return
-      }
-
       updateAttributes({
-        width: newNaturalSize.width,
-        height: newNaturalSize.height,
+        width: img.width || newNaturalSize.width,
+        height: img.height || newNaturalSize.height,
+        alt: img.alt,
+        title: img.title,
       })
 
       if (!initialWidth) {
@@ -157,7 +142,7 @@ export const ImageViewBlock: React.FC<NodeViewProps> = ({
         }))
       }
     },
-    [initSrc, initialWidth, initialHeight, updateAttributes, updateDimensions],
+    [initialWidth, updateAttributes, updateDimensions]
   )
 
   const handleImageError = React.useCallback(() => {
@@ -184,15 +169,6 @@ export const ImageViewBlock: React.FC<NodeViewProps> = ({
   }, [isResizing, handleResizeEnd])
 
   React.useEffect(() => {
-    dimensionsLoadedForSrcRef.current = null
-    setImageState((prev) => ({
-      ...prev,
-      imageLoaded: false,
-      error: false,
-    }))
-  }, [initSrc])
-
-  React.useEffect(() => {
     const handleImage = async () => {
       if (!initSrc.startsWith("blob:") || uploadAttemptedRef.current) {
         return
@@ -207,6 +183,7 @@ export const ImageViewBlock: React.FC<NodeViewProps> = ({
       if (!uploadFn) {
         try {
           const base64 = await blobUrlToBase64(initSrc)
+          setImageState((prev) => ({ ...prev, src: base64 }))
           updateAttributes({ src: base64 })
         } catch {
           setImageState((prev) => ({ ...prev, error: true }))
@@ -221,13 +198,15 @@ export const ImageViewBlock: React.FC<NodeViewProps> = ({
         const file = new File([blob], fileName, { type: blob.type })
 
         const url = await uploadFn(file, editor)
-        const normalizedData = normalizeUploadResponse(url, node.attrs.id)
+        const normalizedData = normalizeUploadResponse(url)
 
-        updateAttributes(normalizedData)
         setImageState((prev) => ({
           ...prev,
+          ...normalizedData,
           isServerUploading: false,
         }))
+
+        updateAttributes(normalizedData)
       } catch {
         setImageState((prev) => ({
           ...prev,
@@ -238,7 +217,7 @@ export const ImageViewBlock: React.FC<NodeViewProps> = ({
     }
 
     void handleImage()
-  }, [editor, fileName, initSrc, node.attrs.id, updateAttributes])
+  }, [editor, fileName, initSrc, updateAttributes])
 
   return (
     <NodeViewWrapper
@@ -252,11 +231,7 @@ export const ImageViewBlock: React.FC<NodeViewProps> = ({
           maxWidth: `min(${maxWidth}px, 100%)`,
           width: currentWidth,
           maxHeight: MAX_HEIGHT,
-          aspectRatio:
-            imageState.naturalSize.width > 0 &&
-            imageState.naturalSize.height > 0
-              ? `${imageState.naturalSize.width} / ${imageState.naturalSize.height}`
-              : undefined,
+          aspectRatio: `${imageState.naturalSize.width} / ${imageState.naturalSize.height}`,
         }}
       >
         <div
@@ -285,13 +260,18 @@ export const ImageViewBlock: React.FC<NodeViewProps> = ({
                 </div>
               )}
 
-              {editor.isEditable ? (
+              <ControlledZoom
+                isZoomed={imageState.isZoomed}
+                onZoomChange={() =>
+                  setImageState((prev) => ({ ...prev, isZoomed: false }))
+                }
+              >
                 <img
                   className={cn(
                     "h-auto rounded object-contain transition-shadow",
                     {
                       "opacity-0": !imageState.imageLoaded || imageState.error,
-                    },
+                    }
                   )}
                   style={{
                     maxWidth: `min(100%, ${maxWidth}px)`,
@@ -300,44 +280,14 @@ export const ImageViewBlock: React.FC<NodeViewProps> = ({
                   }}
                   width={currentWidth}
                   height={currentHeight}
-                  src={initSrc}
+                  src={imageState.src}
                   onError={handleImageError}
                   onLoad={handleImageLoad}
                   alt={node.attrs.alt || ""}
                   title={node.attrs.title || ""}
                   id={node.attrs.id}
                 />
-              ) : (
-                <ControlledZoom
-                  isZoomed={imageState.isZoomed}
-                  onZoomChange={() =>
-                    setImageState((prev) => ({ ...prev, isZoomed: false }))
-                  }
-                >
-                  <img
-                    className={cn(
-                      "h-auto rounded object-contain transition-shadow",
-                      {
-                        "opacity-0":
-                          !imageState.imageLoaded || imageState.error,
-                      },
-                    )}
-                    style={{
-                      maxWidth: `min(100%, ${maxWidth}px)`,
-                      minWidth: `${MIN_WIDTH}px`,
-                      maxHeight: MAX_HEIGHT,
-                    }}
-                    width={currentWidth}
-                    height={currentHeight}
-                    src={initSrc}
-                    onError={handleImageError}
-                    onLoad={handleImageLoad}
-                    alt={node.attrs.alt || ""}
-                    title={node.attrs.title || ""}
-                    id={node.attrs.id}
-                  />
-                </ControlledZoom>
-              )}
+              </ControlledZoom>
             </div>
 
             {imageState.isServerUploading && <ImageOverlay />}

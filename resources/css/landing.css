@@ -20,7 +20,9 @@ body:has(.landing) {
     font-family: var(--font-body);
     font-size: var(--text-md);
     line-height: 1.65;
-    font-feature-settings: 'ss01' on, 'cv11' on;
+    font-feature-settings:
+        'ss01' on,
+        'cv11' on;
     font-variant-numeric: tabular-nums;
 }
 
@@ -72,7 +74,8 @@ body:has(.landing) {
 }
 
 .landing__wordmark:focus-visible {
-    outline: 3px solid color-mix(in oklch, var(--color-accent-2) 70%, var(--color-focus));
+    outline: 3px solid
+        color-mix(in oklch, var(--color-accent-2) 70%, var(--color-focus));
     outline-offset: 3px;
     border-radius: var(--radius-sm);
 }
@@ -99,7 +102,8 @@ body:has(.landing) {
 }
 
 .landing__nav-cta:focus-visible {
-    outline: 3px solid color-mix(in oklch, var(--color-accent-2) 70%, var(--color-focus));
+    outline: 3px solid
+        color-mix(in oklch, var(--color-accent-2) 70%, var(--color-focus));
     outline-offset: 3px;
 }
 
@@ -255,7 +259,8 @@ body:has(.landing) {
 }
 
 .landing .btn:focus-visible {
-    outline: 3px solid color-mix(in oklch, var(--btn-edge) 70%, var(--color-focus));
+    outline: 3px solid
+        color-mix(in oklch, var(--btn-edge) 70%, var(--color-focus));
     outline-offset: 3px;
 }
 
@@ -286,7 +291,11 @@ body:has(.landing) {
 }
 
 .landing .btn--cyan {
-    --btn-face: color-mix(in oklch, var(--color-accent-2) 18%, var(--color-paper));
+    --btn-face: color-mix(
+        in oklch,
+        var(--color-accent-2) 18%,
+        var(--color-paper)
+    );
     --btn-edge: var(--color-accent-2-deep);
     --btn-cast: oklch(66% 0.18 235 / 0.35);
 }
@@ -309,7 +318,11 @@ body:has(.landing) {
 .landing__section--band {
     max-width: none;
     padding-inline: 0;
-    background: color-mix(in oklch, var(--color-accent-2) 8%, var(--color-paper));
+    background: color-mix(
+        in oklch,
+        var(--color-accent-2) 8%,
+        var(--color-paper)
+    );
 }
 
 .landing__section--band > .landing__section-inner {
@@ -370,7 +383,11 @@ body:has(.landing) {
 @media (hover: hover) and (pointer: fine) {
     .landing__step:hover {
         transform: translateY(-4px);
-        background: color-mix(in oklch, var(--step-tint) 12%, var(--color-paper));
+        background: color-mix(
+            in oklch,
+            var(--step-tint) 12%,
+            var(--color-paper)
+        );
         box-shadow: 0 16px 36px -14px oklch(20% 0.012 250 / 0.16);
     }
 }

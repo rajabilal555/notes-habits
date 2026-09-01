@@ -1,7 +1,7 @@
 import type { FormDataConvertible } from '@inertiajs/core';
 import { Form, router } from '@inertiajs/react';
 import { Archive, Bell, Palette, Tag, Trash2, X } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import NoteController from '@/actions/App/Http/Controllers/NoteController';
 import LabelController from '@/actions/App/Http/Controllers/LabelController';
 import InputError from '@/components/input-error';
@@ -200,7 +200,7 @@ export function NoteFormSheet({
                                     </div>
                                 </div>
 
-                                <div className="min-h-0 flex-1 overflow-y-auto">
+                                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
                                     <NoteEditor
                                         key={editorKey}
                                         content={content}

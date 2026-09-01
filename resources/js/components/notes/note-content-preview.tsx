@@ -26,10 +26,7 @@ export function NoteContentPreview({
         return null;
     }
 
-    const html = generateHTML(
-        normalizeNoteContent(content),
-        previewExtensions,
-    );
+    const html = generateHTML(normalizeNoteContent(content), previewExtensions);
 
     return (
         <div

@@ -254,7 +254,7 @@ export function HabitFormSheet({
                                                         unmark it.
                                                     </p>
                                                 </div>
-                                                <div className="flex justify-center w-full">
+                                                <div className="flex w-full justify-center">
                                                     <HabitHeatmapStrip
                                                         habitId={habit.id}
                                                         heatmap={

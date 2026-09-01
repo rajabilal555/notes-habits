@@ -12,7 +12,11 @@ export function NotePinIcon({
 }) {
     return (
         <Pin
-            className={cn('size-4 rotate-45', filled && 'fill-current', className)}
+            className={cn(
+                'size-4 rotate-45',
+                filled && 'fill-current',
+                className,
+            )}
             aria-hidden={label ? undefined : true}
             aria-label={label}
         />
