@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -125,8 +126,12 @@ class NoteController extends Controller
             'public',
         );
 
+        if ($path === false) {
+            abort(500, 'Failed to store image.');
+        }
+
         return [
-            'url' => '/storage/'.$path,
+            'url' => Storage::disk('public')->url($path),
         ];
     }
 
