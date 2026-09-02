@@ -57,23 +57,6 @@ test('users can create and update notes with blockquote markdown', function () {
         );
 });
 
-test('legacy json note content is returned as a raw string', function () {
-    $user = User::factory()->create();
-    $legacyContent = '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Old note"}]}]}';
-
-    $note = Note::factory()->for($user)->create([
-        'content' => $legacyContent,
-    ]);
-
-    $this->actingAs($user);
-
-    $this->get(route('notes.index'))
-        ->assertInertia(fn (Assert $page) => $page
-            ->has('notes', 1)
-            ->where('notes.0.content', $legacyContent),
-        );
-});
-
 test('notes can be created without content', function () {
     $user = User::factory()->create();
     $this->actingAs($user);

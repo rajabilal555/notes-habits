@@ -1,0 +1,53 @@
+.note-atomic-editor {
+    --atomic-editor-fg: var(--foreground);
+    --atomic-editor-fg-muted: var(--muted-foreground);
+    --atomic-editor-fg-faint: var(--muted-foreground);
+    --atomic-editor-bg: transparent;
+    --atomic-editor-bg-panel: transparent;
+    --atomic-editor-bg-surface: transparent;
+    --atomic-editor-border: var(--border);
+    --atomic-editor-link: var(--foreground);
+    --atomic-editor-link-hover: var(--foreground);
+    --atomic-editor-accent: var(--primary);
+    --atomic-editor-accent-bright: var(--primary);
+    --atomic-editor-font: var(--font-sans);
+    --atomic-editor-measure: none;
+
+    display: flex;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+}
+
+.note-editor--sheet {
+    @apply flex min-h-0 flex-1 flex-col;
+}
+
+.note-editor--sheet .note-atomic-editor .atomic-cm-editor {
+    min-height: 0;
+    flex: 1;
+}
+
+.note-editor--sheet .note-atomic-editor .cm-editor {
+    height: 100%;
+    background: transparent !important;
+}
+
+.note-editor--sheet .note-atomic-editor .cm-editor.cm-focused {
+    outline: none;
+}
+
+.note-editor--sheet .note-atomic-editor .cm-scroller {
+    overflow: auto;
+}
+
+.note-editor--sheet .note-atomic-editor .cm-content {
+    max-width: none;
+    padding-inline: 1rem;
+    padding-bottom: 1rem;
+}
+
+.note-editor--sheet .note-atomic-editor .cm-cursor,
+.note-editor--sheet .note-atomic-editor .cm-dropCursor {
+    border-left-color: var(--foreground);
+}

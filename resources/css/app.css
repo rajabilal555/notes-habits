@@ -1,8 +1,9 @@
 @import 'tailwindcss';
 
-@plugin '@tailwindcss/typography';
-
 @import 'tw-animate-css';
+
+@import './note-atomic-editor.css';
+@import './note-content-preview.css';
 
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
@@ -142,32 +143,4 @@
     body {
         @apply bg-background text-foreground;
     }
-}
-
-.note-content-preview {
-    @apply pointer-events-none;
-
-    input[type='checkbox'] {
-        @apply pointer-events-none;
-    }
-}
-
-.note-editor--sheet {
-    @apply flex min-h-full w-full flex-col;
-}
-
-.note-editor--sheet .mdxeditor {
-    @apply flex min-h-0 flex-1 flex-col rounded-none border-0 bg-transparent shadow-none;
-}
-
-.note-editor--sheet .mdxeditor-root-contenteditable {
-    @apply min-h-full flex-1;
-}
-
-.note-editor--sheet .note-mdx-editor-content {
-    @apply min-h-full flex-1 cursor-text px-4 pb-4 text-base outline-none;
-}
-
-.note-editor--sheet .mdxeditor-toolbar {
-    @apply hidden;
 }

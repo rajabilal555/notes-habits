@@ -21,7 +21,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { formatReminder, toDatetimeLocalValue } from '@/lib/datetime-local';
-import { isLegacyContent, type NoteContent } from '@/lib/note-content';
+import { type NoteContent } from '@/lib/note-content';
 import type { NoteColorId } from '@/lib/note-colors';
 import { noteColorClassName } from '@/lib/note-colors';
 import { cn } from '@/lib/utils';
@@ -63,11 +63,7 @@ export function NoteFormSheet({
 
         setColor(note?.color ?? 'default');
         setIsPinned(note?.is_pinned ?? false);
-        setContent(
-            note?.content && !isLegacyContent(note.content)
-                ? note.content
-                : null,
-        );
+        setContent(note?.content ?? null);
         setSelectedLabelIds(note?.labels.map((label) => label.id) ?? []);
         setNewLabelNames([]);
         setReminderAt(toDatetimeLocalValue(note?.reminder_at ?? null));
@@ -100,6 +96,7 @@ export function NoteFormSheet({
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent
                 side="right"
+                onOpenAutoFocus={(event) => event.preventDefault()}
                 className={cn(
                     'flex h-full w-full flex-col gap-0 border-0 p-0 sm:max-w-xl md:max-w-2xl [&>button]:hidden',
                     noteColorClassName(color),
@@ -204,9 +201,11 @@ export function NoteFormSheet({
                                     </div>
                                 </div>
 
-                                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+                                <div className="flex min-h-0 flex-1 flex-col">
                                     <NoteEditor
                                         key={editorKey}
+                                        autoFocus={open}
+                                        documentId={editorKey}
                                         content={content}
                                         onChange={setContent}
                                         className="note-editor--sheet"

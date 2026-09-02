@@ -1,23 +1,5 @@
-import { isLegacyContent, type NoteContent } from '@/lib/note-content';
+import { contentPlainText } from '@/lib/note-content';
 import type { Note } from '@/types/note';
-
-export function contentPlainText(
-    content: NoteContent | null | undefined,
-): string {
-    if (!content?.trim()) {
-        return '';
-    }
-
-    if (isLegacyContent(content)) {
-        return content;
-    }
-
-    return content
-        .replace(/^\s*[-*+]\s+\[[ xX]\]\s+/gm, '')
-        .replace(/^\s*[-*+]\s+/gm, '')
-        .replace(/[#*_`[\]()]/g, '')
-        .trim();
-}
 
 export function noteSearchText(note: Note): string {
     return [
