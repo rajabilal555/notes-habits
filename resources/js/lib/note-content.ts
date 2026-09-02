@@ -1,126 +1,76 @@
-import type { JSONContent } from '@tiptap/core';
+export type NoteContent = string;
 
-export type NoteContent = JSONContent;
-
-export function emptyNoteContent(): NoteContent {
-    return {
-        type: 'doc',
-        content: [
-            {
-                type: 'paragraph',
-            },
-        ],
-    };
-}
-
-export function normalizeNoteContent(
-    content: NoteContent | null | undefined,
-): NoteContent {
-    if (!content || content.type !== 'doc') {
-        return emptyNoteContent();
+export function isLegacyContent(content: string | null | undefined): boolean {
+    if (!content?.trim()) {
+        return false;
     }
 
-    return {
-        type: 'doc',
-        content: Array.isArray(content.content) ? content.content : [],
-    };
-}
+    const trimmed = content.trimStart();
 
-export function nodePlainText(node: unknown): string {
-    if (typeof node === 'string') {
-        return node;
+    if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+        return false;
     }
 
-    if (!node || typeof node !== 'object') {
-        return '';
-    }
+    try {
+        const parsed = JSON.parse(content) as unknown;
 
-    if ('text' in node && typeof node.text === 'string') {
-        return node.text;
+        return typeof parsed === 'object' && parsed !== null;
+    } catch {
+        return false;
     }
-
-    if ('content' in node && Array.isArray(node.content)) {
-        return node.content.map(nodePlainText).join('');
-    }
-
-    return '';
 }
 
 export function hasNoteContent(
-    content: NoteContent | null | undefined,
+    content: string | null | undefined,
 ): boolean {
-    if (!content) {
+    if (!content?.trim()) {
         return false;
     }
 
-    const text = nodePlainText(content).trim();
-
-    if (text !== '') {
+    if (isLegacyContent(content)) {
         return true;
     }
 
-    const walk = (nodes: unknown[]): boolean => {
-        for (const node of nodes) {
-            if (!node || typeof node !== 'object') {
-                continue;
-            }
+    return content.trim() !== '';
+}
 
-            if ('type' in node && node.type === 'horizontalRule') {
-                return true;
-            }
+export function normalizeNoteContent(
+    content: string | null | undefined,
+): string {
+    if (!content || isLegacyContent(content)) {
+        return '';
+    }
 
-            if ('type' in node && node.type === 'image') {
-                return true;
-            }
-
-            if (
-                'content' in node &&
-                Array.isArray(node.content) &&
-                walk(node.content)
-            ) {
-                return true;
-            }
-        }
-
-        return false;
-    };
-
-    return Array.isArray(content.content) ? walk(content.content) : false;
+    return content;
 }
 
 export function blockChecklistProgress(
-    content: NoteContent | null | undefined,
+    content: string | null | undefined,
 ): {
     checked: number;
     total: number;
 } {
-    if (!content?.content?.length) {
+    if (!content?.trim() || isLegacyContent(content)) {
         return { checked: 0, total: 0 };
     }
 
-    const checklistItems: Array<{ attrs?: { checked?: boolean } }> = [];
+    const lines = content.split('\n');
+    let checked = 0;
+    let total = 0;
 
-    const walk = (nodes: unknown[]): void => {
-        for (const node of nodes) {
-            if (!node || typeof node !== 'object') {
-                continue;
-            }
+    for (const line of lines) {
+        const match = line.match(/^\s*[-*+]\s+\[([ xX])\]\s+/);
 
-            if ('type' in node && node.type === 'taskItem') {
-                checklistItems.push(node as { attrs?: { checked?: boolean } });
-            }
-
-            if ('content' in node && Array.isArray(node.content)) {
-                walk(node.content);
-            }
+        if (!match) {
+            continue;
         }
-    };
 
-    walk(content.content);
+        total += 1;
 
-    return {
-        checked: checklistItems.filter((item) => item.attrs?.checked === true)
-            .length,
-        total: checklistItems.length,
-    };
+        if (match[1].toLowerCase() === 'x') {
+            checked += 1;
+        }
+    }
+
+    return { checked, total };
 }

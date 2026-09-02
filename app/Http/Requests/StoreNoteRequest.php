@@ -16,7 +16,7 @@ class StoreNoteRequest extends FormRequest
     {
         return [
             'title' => ['nullable', 'string', 'max:255'],
-            'content' => ['nullable', 'array'],
+            'content' => ['nullable', 'string'],
             'color' => ['nullable', 'string', Rule::in(NoteColor::values())],
             'is_pinned' => ['sometimes', 'boolean'],
             'reminder_at' => ['nullable', 'date'],

@@ -4,11 +4,11 @@ use App\Models\Note;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
-test('users can create and update notes with tiptap content', function () {
+test('users can create and update notes with markdown content', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
-    $content = sampleParagraphContent('Buy milk');
+    $content = "- [ ] Buy milk\n- [x] Eggs";
 
     $this->post(route('notes.store'), [
         'title' => 'Groceries',
@@ -22,12 +22,10 @@ test('users can create and update notes with tiptap content', function () {
     $this->get(route('notes.index'))
         ->assertInertia(fn (Assert $page) => $page
             ->has('notes', 1)
-            ->where('notes.0.content.type', 'doc')
-            ->where('notes.0.content.content.0.type', 'paragraph')
-            ->where('notes.0.content.content.0.content.0.text', 'Buy milk'),
+            ->where('notes.0.content', $content),
         );
 
-    $updatedContent = sampleParagraphContent('Buy bread');
+    $updatedContent = '- [ ] Buy bread';
 
     $this->patch(route('notes.update', $note), [
         'title' => 'Groceries',
@@ -37,11 +35,11 @@ test('users can create and update notes with tiptap content', function () {
     expect($note->fresh()->content)->toBe($updatedContent);
 });
 
-test('users can create and update notes with blockquote content', function () {
+test('users can create and update notes with blockquote markdown', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
-    $content = sampleBlockquoteContent('Stay hungry, stay foolish.');
+    $content = '> Stay hungry, stay foolish.';
 
     $this->post(route('notes.store'), [
         'title' => 'Quote',
@@ -55,9 +53,24 @@ test('users can create and update notes with blockquote content', function () {
     $this->get(route('notes.index'))
         ->assertInertia(fn (Assert $page) => $page
             ->has('notes', 1)
-            ->where('notes.0.content.content.0.type', 'blockquote')
-            ->where('notes.0.content.content.0.content.0.type', 'paragraph')
-            ->where('notes.0.content.content.0.content.0.content.0.text', 'Stay hungry, stay foolish.'),
+            ->where('notes.0.content', $content),
+        );
+});
+
+test('legacy json note content is returned as a raw string', function () {
+    $user = User::factory()->create();
+    $legacyContent = '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Old note"}]}]}';
+
+    $note = Note::factory()->for($user)->create([
+        'content' => $legacyContent,
+    ]);
+
+    $this->actingAs($user);
+
+    $this->get(route('notes.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('notes', 1)
+            ->where('notes.0.content', $legacyContent),
         );
 });
 
@@ -73,44 +86,3 @@ test('notes can be created without content', function () {
         ->title->toBe('Empty')
         ->content->toBeNull();
 });
-
-/**
- * @return array<string, mixed>
- */
-function sampleParagraphContent(string $text): array
-{
-    return [
-        'type' => 'doc',
-        'content' => [
-            [
-                'type' => 'paragraph',
-                'content' => [
-                    ['type' => 'text', 'text' => $text],
-                ],
-            ],
-        ],
-    ];
-}
-
-/**
- * @return array<string, mixed>
- */
-function sampleBlockquoteContent(string $text): array
-{
-    return [
-        'type' => 'doc',
-        'content' => [
-            [
-                'type' => 'blockquote',
-                'content' => [
-                    [
-                        'type' => 'paragraph',
-                        'content' => [
-                            ['type' => 'text', 'text' => $text],
-                        ],
-                    ],
-                ],
-            ],
-        ],
-    ];
-}

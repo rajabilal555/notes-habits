@@ -21,7 +21,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { formatReminder, toDatetimeLocalValue } from '@/lib/datetime-local';
-import type { NoteContent } from '@/lib/note-content';
+import { isLegacyContent, type NoteContent } from '@/lib/note-content';
 import type { NoteColorId } from '@/lib/note-colors';
 import { noteColorClassName } from '@/lib/note-colors';
 import { cn } from '@/lib/utils';
@@ -63,7 +63,11 @@ export function NoteFormSheet({
 
         setColor(note?.color ?? 'default');
         setIsPinned(note?.is_pinned ?? false);
-        setContent(note?.content ?? null);
+        setContent(
+            note?.content && !isLegacyContent(note.content)
+                ? note.content
+                : null,
+        );
         setSelectedLabelIds(note?.labels.map((label) => label.id) ?? []);
         setNewLabelNames([]);
         setReminderAt(toDatetimeLocalValue(note?.reminder_at ?? null));

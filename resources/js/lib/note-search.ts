@@ -1,42 +1,22 @@
-import { nodePlainText, type NoteContent } from '@/lib/note-content';
+import { isLegacyContent, type NoteContent } from '@/lib/note-content';
 import type { Note } from '@/types/note';
 
 export function contentPlainText(
     content: NoteContent | null | undefined,
 ): string {
-    if (!content) {
+    if (!content?.trim()) {
         return '';
     }
 
-    const nodes =
-        content.type === 'doc' && Array.isArray(content.content)
-            ? content.content
-            : [content];
+    if (isLegacyContent(content)) {
+        return content;
+    }
 
-    const parts: string[] = [];
-
-    const walk = (items: unknown[]): void => {
-        for (const node of items) {
-            const text = nodePlainText(node).trim();
-
-            if (text !== '') {
-                parts.push(text);
-            }
-
-            if (
-                node &&
-                typeof node === 'object' &&
-                'content' in node &&
-                Array.isArray(node.content)
-            ) {
-                walk(node.content);
-            }
-        }
-    };
-
-    walk(nodes);
-
-    return parts.join(' ');
+    return content
+        .replace(/^\s*[-*+]\s+\[[ xX]\]\s+/gm, '')
+        .replace(/^\s*[-*+]\s+/gm, '')
+        .replace(/[#*_`[\]()]/g, '')
+        .trim();
 }
 
 export function noteSearchText(note: Note): string {

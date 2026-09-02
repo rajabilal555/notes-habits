@@ -12,7 +12,7 @@ test('authenticated users can create, list, update, and delete notes', function 
     $user = User::factory()->create();
     $this->actingAs($user);
 
-    $content = sampleNoteContent('Milk and eggs');
+    $content = 'Milk and eggs';
 
     $this->get(route('notes.index'))
         ->assertOk()
@@ -39,7 +39,7 @@ test('authenticated users can create, list, update, and delete notes', function 
             ->where('notes.0.title', 'Groceries'),
         );
 
-    $updatedContent = sampleNoteContent('Milk, eggs, bread');
+    $updatedContent = 'Milk, eggs, bread';
 
     $this->patch(route('notes.update', $note), [
         'title' => 'Shopping',
@@ -65,7 +65,7 @@ test('users cannot modify another users notes', function () {
 
     $this->patch(route('notes.update', $note), [
         'title' => 'Hacked',
-        'content' => sampleNoteContent('Nope'),
+        'content' => 'Nope',
     ])->assertForbidden();
 
     $this->delete(route('notes.destroy', $note))
@@ -73,29 +73,3 @@ test('users cannot modify another users notes', function () {
 
     expect($note->fresh()->title)->not->toBe('Hacked');
 });
-
-/**
- * @return list<array<string, mixed>>
- */
-function sampleNoteContent(string $text): array
-{
-    return [
-        [
-            'id' => 'paragraph-1',
-            'type' => 'paragraph',
-            'props' => [
-                'textColor' => 'default',
-                'backgroundColor' => 'default',
-                'textAlignment' => 'left',
-            ],
-            'content' => [
-                [
-                    'type' => 'text',
-                    'text' => $text,
-                    'styles' => [],
-                ],
-            ],
-            'children' => [],
-        ],
-    ];
-}

@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 
+@plugin '@tailwindcss/typography';
+
 @import 'tw-animate-css';
 
 @source '../views';
@@ -145,15 +147,7 @@
 .note-content-preview {
     @apply pointer-events-none;
 
-    &.minimal-tiptap-editor .ProseMirror {
-        @apply max-w-full;
-    }
-
-    &.minimal-tiptap-editor .ProseMirror img {
-        @apply h-auto max-w-full rounded-lg;
-    }
-
-    &.minimal-tiptap-editor .ProseMirror input[type='checkbox'] {
+    input[type='checkbox'] {
         @apply pointer-events-none;
     }
 }
@@ -162,10 +156,18 @@
     @apply flex min-h-full w-full flex-col;
 }
 
-.note-editor--sheet .minimal-tiptap-editor {
-    @apply flex min-h-0 flex-1 flex-col;
+.note-editor--sheet .mdxeditor {
+    @apply flex min-h-0 flex-1 flex-col rounded-none border-0 bg-transparent shadow-none;
 }
 
-.note-editor--sheet .minimal-tiptap-editor .ProseMirror {
-    @apply min-h-full flex-1 cursor-text;
+.note-editor--sheet .mdxeditor-root-contenteditable {
+    @apply min-h-full flex-1;
+}
+
+.note-editor--sheet .note-mdx-editor-content {
+    @apply min-h-full flex-1 cursor-text px-4 pb-4 text-base outline-none;
+}
+
+.note-editor--sheet .mdxeditor-toolbar {
+    @apply hidden;
 }

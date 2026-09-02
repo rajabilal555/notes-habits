@@ -40,10 +40,7 @@ class NoteFactory extends Factory
         ]);
     }
 
-    /**
-     * @param  list<array<string, mixed>>  $content
-     */
-    public function withContent(array $content): static
+    public function withContent(string $content): static
     {
         return $this->state(fn (array $attributes) => [
             'content' => $content,

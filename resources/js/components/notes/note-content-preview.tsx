@@ -1,12 +1,10 @@
 'use client';
 
-import { generateHTML } from '@tiptap/html';
-
-import { createMinimalTiptapExtensions } from '@/components/ui/minimal-tiptap/hooks/use-minimal-tiptap';
-import '@/components/ui/minimal-tiptap/styles/index.css';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
     hasNoteContent,
-    normalizeNoteContent,
+    isLegacyContent,
     type NoteContent,
 } from '@/lib/note-content';
 import { cn } from '@/lib/utils';
@@ -16,8 +14,6 @@ type NoteContentPreviewProps = {
     className?: string;
 };
 
-const previewExtensions = createMinimalTiptapExtensions({ output: 'json' });
-
 export function NoteContentPreview({
     content,
     className,
@@ -26,19 +22,41 @@ export function NoteContentPreview({
         return null;
     }
 
-    const html = generateHTML(normalizeNoteContent(content), previewExtensions);
+    if (isLegacyContent(content)) {
+        return (
+            <pre
+                className={cn(
+                    'note-content-preview text-muted-foreground max-h-52 overflow-hidden text-xs break-words whitespace-pre-wrap',
+                    className,
+                )}
+            >
+                {content}
+            </pre>
+        );
+    }
 
     return (
         <div
             className={cn(
-                'note-content-preview minimal-tiptap-editor',
+                'note-content-preview prose prose-sm dark:prose-invert max-w-none text-base break-words',
                 className,
             )}
         >
-            <div
-                className="ProseMirror text-base break-words"
-                dangerouslySetInnerHTML={{ __html: html }}
-            />
+            <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                    input: ({ checked, ...props }) => (
+                        <input
+                            type="checkbox"
+                            checked={checked}
+                            readOnly
+                            {...props}
+                        />
+                    ),
+                }}
+            >
+                {content ?? ''}
+            </ReactMarkdown>
         </div>
     );
 }

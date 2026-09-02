@@ -16,7 +16,7 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property int $user_id
  * @property string|null $title
- * @property list<array<string, mixed>>|null $content
+ * @property string|null $content
  * @property NoteColor $color
  * @property bool $is_pinned
  * @property int $sort_order
@@ -37,7 +37,7 @@ class Note extends Model
     protected function casts(): array
     {
         return [
-            'content' => 'array',
+            'content' => 'string',
             'color' => NoteColor::class,
             'is_pinned' => 'boolean',
             'sort_order' => 'integer',
