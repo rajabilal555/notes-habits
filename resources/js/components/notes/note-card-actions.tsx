@@ -3,9 +3,8 @@ import { Bell, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import NoteController from '@/actions/App/Http/Controllers/NoteController';
 import { NotePinIcon } from '@/components/notes/note-pin-icon';
+import { NoteReminderPicker } from '@/components/notes/note-reminder-picker';
 import { NoteToolbarButton } from '@/components/notes/note-toolbar-button';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
     Popover,
     PopoverContent,
@@ -41,6 +40,11 @@ export function NoteCardActions({
             { reminder_at: value || null },
             { preserveScroll: true },
         );
+    };
+
+    const handleReminderChange = (value: string) => {
+        setReminderAt(value);
+        saveReminder(value);
     };
 
     const handleDelete = () => {
@@ -92,33 +96,12 @@ export function NoteCardActions({
                         <Bell className="size-4" />
                     </NoteToolbarButton>
                 </PopoverTrigger>
-                <PopoverContent className="w-64" align="end">
-                    <p className="mb-2 text-sm font-medium">Reminder</p>
-                    <Input
-                        type="datetime-local"
+                <PopoverContent className="w-auto p-0" align="end">
+                    <NoteReminderPicker
                         value={reminderAt}
-                        onChange={(event) => {
-                            const value = event.target.value;
-                            setReminderAt(value);
-                            saveReminder(value);
-                        }}
-                        className="h-9"
+                        onChange={handleReminderChange}
+                        onClear={() => setReminderOpen(false)}
                     />
-                    {reminderAt ? (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="mt-2 h-8 px-2"
-                            onClick={() => {
-                                setReminderAt('');
-                                saveReminder('');
-                                setReminderOpen(false);
-                            }}
-                        >
-                            Clear reminder
-                        </Button>
-                    ) : null}
                 </PopoverContent>
             </Popover>
 

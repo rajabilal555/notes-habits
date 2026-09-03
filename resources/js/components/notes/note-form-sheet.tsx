@@ -9,6 +9,7 @@ import { NoteEditor } from '@/components/notes/note-editor';
 import { NoteColorPicker } from '@/components/notes/note-color-picker';
 import { NoteLabelPickerContent } from '@/components/notes/note-label-picker-content';
 import { NotePinIcon } from '@/components/notes/note-pin-icon';
+import { NoteReminderPicker } from '@/components/notes/note-reminder-picker';
 import { NoteToolbarButton } from '@/components/notes/note-toolbar-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -332,34 +333,14 @@ export function NoteFormSheet({
                                                 <Bell className="size-4" />
                                             </NoteToolbarButton>
                                         </PopoverTrigger>
-                                        <PopoverContent className="w-64">
-                                            <p className="mb-2 text-sm font-medium">
-                                                Reminder
-                                            </p>
-                                            <Input
-                                                id="note-reminder"
-                                                type="datetime-local"
+                                        <PopoverContent
+                                            className="w-auto p-0"
+                                            align="start"
+                                        >
+                                            <NoteReminderPicker
                                                 value={reminderAt}
-                                                onChange={(event) =>
-                                                    setReminderAt(
-                                                        event.target.value,
-                                                    )
-                                                }
-                                                className="h-9"
+                                                onChange={setReminderAt}
                                             />
-                                            {reminderAt ? (
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="mt-2 h-8 px-2"
-                                                    onClick={() =>
-                                                        setReminderAt('')
-                                                    }
-                                                >
-                                                    Clear reminder
-                                                </Button>
-                                            ) : null}
                                         </PopoverContent>
                                     </Popover>
 
