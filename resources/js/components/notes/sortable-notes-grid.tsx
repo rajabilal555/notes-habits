@@ -55,7 +55,8 @@ function SortableNoteCard({
                 note={note}
                 onClick={onClick}
                 dragHandleRef={setActivatorNodeRef}
-                dragHandleProps={{ ...attributes, ...listeners }}
+                dragHandleListeners={listeners}
+                dragHandleAttributes={attributes}
             />
         </div>
     );

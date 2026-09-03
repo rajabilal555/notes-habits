@@ -1,6 +1,9 @@
 import { router } from '@inertiajs/react';
 import { ArchiveRestore, Bell, GripVertical } from 'lucide-react';
-import type { DraggableAttributes } from '@dnd-kit/core';
+import type {
+    DraggableAttributes,
+    DraggableSyntheticListeners,
+} from '@dnd-kit/core';
 import NoteController from '@/actions/App/Http/Controllers/NoteController';
 import { NoteCardActions } from '@/components/notes/note-card-actions';
 import { NoteContentPreview } from '@/components/notes/note-content-preview';
@@ -16,18 +19,21 @@ export function NoteCard({
     onClick,
     archived = false,
     dragHandleRef,
-    dragHandleProps,
+    dragHandleListeners,
+    dragHandleAttributes,
 }: {
     note: Note;
     onClick: () => void;
     archived?: boolean;
     dragHandleRef?: (element: HTMLElement | null) => void;
-    dragHandleProps?: DraggableAttributes & Record<string, unknown>;
+    dragHandleListeners?: DraggableSyntheticListeners;
+    dragHandleAttributes?: DraggableAttributes;
 }) {
     const title = note.title?.trim() || 'Untitled';
     const { checked, total } = blockChecklistProgress(note.content);
     const hasItems = total > 0;
     const showContent = hasNoteContent(note.content);
+    const isDraggable = Boolean(dragHandleListeners);
 
     return (
         <div
@@ -46,19 +52,24 @@ export function NoteCard({
                 'focus-visible:ring-ring hover:brightness-[0.98] focus-visible:ring-2 focus-visible:outline-none dark:hover:brightness-110',
             )}
         >
-            <div className="flex items-start justify-between gap-2">
+            <div
+                ref={isDraggable ? dragHandleRef : undefined}
+                className={cn(
+                    'flex items-start justify-between gap-2',
+                    isDraggable &&
+                        'cursor-grab touch-none active:cursor-grabbing',
+                )}
+                {...(dragHandleAttributes ?? {})}
+                {...(dragHandleListeners ?? {})}
+            >
                 <div className="flex min-w-0 flex-1 items-start gap-1">
-                    {dragHandleProps ? (
-                        <button
-                            type="button"
-                            ref={dragHandleRef}
-                            className="text-muted-foreground hover:text-foreground mt-0.5 shrink-0 cursor-grab touch-none active:cursor-grabbing"
-                            aria-label={`Drag ${title}`}
-                            onClick={(event) => event.stopPropagation()}
-                            {...dragHandleProps}
+                    {isDraggable ? (
+                        <span
+                            className="text-muted-foreground mt-0.5 shrink-0"
+                            aria-hidden="true"
                         >
                             <GripVertical className="size-4" />
-                        </button>
+                        </span>
                     ) : null}
                     {note.title?.trim() ? (
                         <h2 className="line-clamp-2 flex-1 font-medium">
@@ -88,7 +99,7 @@ export function NoteCard({
                     {archived ? (
                         <button
                             type="button"
-                            className="text-muted-foreground hover:text-foreground rounded-full p-1 transition-colors"
+                            className="text-muted-foreground hover:text-foreground cursor-pointer rounded-full p-1 transition-colors"
                             aria-label={`Restore ${title} to notes`}
                             onClick={(event) => {
                                 event.stopPropagation();
@@ -98,6 +109,7 @@ export function NoteCard({
                                     { preserveScroll: true },
                                 );
                             }}
+                            onPointerDown={(event) => event.stopPropagation()}
                         >
                             <ArchiveRestore className="size-4" />
                         </button>
