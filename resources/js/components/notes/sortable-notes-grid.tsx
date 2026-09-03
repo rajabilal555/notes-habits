@@ -16,10 +16,11 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { router } from '@inertiajs/react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import NoteController from '@/actions/App/Http/Controllers/NoteController';
 import { NoteCard } from '@/components/notes/note-card';
 import { NotesMasonryGrid } from '@/components/notes/notes-masonry-grid';
+import { splitPinnedNotes } from '@/components/notes/notes-sections';
 import { normalizeNoteOrder } from '@/lib/note-order';
 import type { Note } from '@/types/note';
 
@@ -62,6 +63,39 @@ function SortableNoteCard({
     );
 }
 
+function SortableNotesSection({
+    title,
+    notes,
+    onEditNote,
+}: {
+    title?: string;
+    notes: Note[];
+    onEditNote: (note: Note) => void;
+}) {
+    const noteIds = useMemo(() => notes.map((note) => note.id), [notes]);
+
+    return (
+        <section className="flex flex-col gap-3">
+            {title ? (
+                <h2 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    {title}
+                </h2>
+            ) : null}
+            <SortableContext items={noteIds} strategy={rectSortingStrategy}>
+                <NotesMasonryGrid>
+                    {notes.map((note) => (
+                        <SortableNoteCard
+                            key={note.id}
+                            note={note}
+                            onClick={() => onEditNote(note)}
+                        />
+                    ))}
+                </NotesMasonryGrid>
+            </SortableContext>
+        </section>
+    );
+}
+
 export function SortableNotesGrid({
     notes,
     onEditNote,
@@ -75,8 +109,8 @@ export function SortableNotesGrid({
         setOrderedNotes(notes);
     }, [notes]);
 
-    const noteIds = useMemo(
-        () => orderedNotes.map((note) => note.id),
+    const { pinned, unpinned } = useMemo(
+        () => splitPinnedNotes(orderedNotes),
         [orderedNotes],
     );
 
@@ -97,10 +131,30 @@ export function SortableNotesGrid({
         }
 
         setOrderedNotes((current) => {
-            const oldIndex = current.findIndex((note) => note.id === active.id);
-            const newIndex = current.findIndex((note) => note.id === over.id);
+            const activeNote = current.find((note) => note.id === active.id);
+            const overNote = current.find((note) => note.id === over.id);
+
+            if (!activeNote || !overNote) {
+                return current;
+            }
+
+            if (activeNote.is_pinned !== overNote.is_pinned) {
+                return current;
+            }
+
+            const group = current.filter(
+                (note) => note.is_pinned === activeNote.is_pinned,
+            );
+            const other = current.filter(
+                (note) => note.is_pinned !== activeNote.is_pinned,
+            );
+            const oldIndex = group.findIndex((note) => note.id === active.id);
+            const newIndex = group.findIndex((note) => note.id === over.id);
+            const reorderedGroup = arrayMove(group, oldIndex, newIndex);
             const moved = normalizeNoteOrder(
-                arrayMove(current, oldIndex, newIndex),
+                activeNote.is_pinned
+                    ? [...reorderedGroup, ...other]
+                    : [...other, ...reorderedGroup],
             );
 
             router.patch(
@@ -113,23 +167,36 @@ export function SortableNotesGrid({
         });
     };
 
+    let content: ReactNode = null;
+
+    if (pinned.length > 0 || unpinned.length > 0) {
+        content = (
+            <div className="flex flex-col gap-8">
+                {pinned.length > 0 ? (
+                    <SortableNotesSection
+                        title="Pinned"
+                        notes={pinned}
+                        onEditNote={onEditNote}
+                    />
+                ) : null}
+                {unpinned.length > 0 ? (
+                    <SortableNotesSection
+                        title={pinned.length > 0 ? 'Others' : undefined}
+                        notes={unpinned}
+                        onEditNote={onEditNote}
+                    />
+                ) : null}
+            </div>
+        );
+    }
+
     return (
         <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
         >
-            <SortableContext items={noteIds} strategy={rectSortingStrategy}>
-                <NotesMasonryGrid>
-                    {orderedNotes.map((note) => (
-                        <SortableNoteCard
-                            key={note.id}
-                            note={note}
-                            onClick={() => onEditNote(note)}
-                        />
-                    ))}
-                </NotesMasonryGrid>
-            </SortableContext>
+            {content}
         </DndContext>
     );
 }

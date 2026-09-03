@@ -76,6 +76,7 @@ class NoteController extends Controller
             'sort_order' => $minSortOrder !== null ? $minSortOrder - 1 : 0,
         ]);
         $note->syncLabels($request->user(), $labelIds, $labelNames);
+        $note->recordVersionIfChanged();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Note created.')]);
 
@@ -91,8 +92,15 @@ class NoteController extends Controller
         $labelNames = $validated['label_names'] ?? [];
         unset($validated['label_ids'], $validated['label_names']);
 
+        $shouldVersion = array_key_exists('title', $validated)
+            || array_key_exists('content', $validated);
+
         $note->update($validated);
         $note->syncLabels($request->user(), $labelIds, $labelNames);
+
+        if ($shouldVersion) {
+            $note->recordVersionIfChanged();
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Note updated.')]);
 

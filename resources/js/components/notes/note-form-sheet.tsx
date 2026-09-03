@@ -1,7 +1,7 @@
 import type { FormDataConvertible } from '@inertiajs/core';
 import { Form, router } from '@inertiajs/react';
 import { Archive, Bell, Palette, Tag, Trash2, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import NoteController from '@/actions/App/Http/Controllers/NoteController';
 import LabelController from '@/actions/App/Http/Controllers/LabelController';
 import InputError from '@/components/input-error';
@@ -9,8 +9,10 @@ import { NoteEditor } from '@/components/notes/note-editor';
 import { NoteColorPicker } from '@/components/notes/note-color-picker';
 import { NoteLabelPickerContent } from '@/components/notes/note-label-picker-content';
 import { NotePinIcon } from '@/components/notes/note-pin-icon';
-import { NoteReminderPicker } from '@/components/notes/note-reminder-picker';
 import { NoteToolbarButton } from '@/components/notes/note-toolbar-button';
+import { NoteVersionHistory } from '@/components/notes/note-version-history';
+import { NoteAttachmentsPanel } from '@/components/notes/note-attachments-panel';
+import { NoteReminderPicker } from '@/components/notes/note-reminder-picker';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +30,7 @@ import { noteColorClassName } from '@/lib/note-colors';
 import { cn } from '@/lib/utils';
 import type { Label as LabelType } from '@/types/label';
 import type { Note } from '@/types/note';
+import type { NoteVersion } from '@/types/note-version';
 
 type NoteFormSheetProps = {
     open: boolean;
@@ -37,8 +40,50 @@ type NoteFormSheetProps = {
     archivedView?: boolean;
 };
 
+type NoteBaseline = {
+    title: string;
+    content: NoteContent | null;
+    color: NoteColorId;
+    isPinned: boolean;
+    selectedLabelIds: number[];
+    newLabelNames: string[];
+    reminderAt: string;
+};
+
 const fieldClassName =
     'border-0 bg-transparent px-4 shadow-none focus-visible:ring-0';
+
+function normalizeTitle(title: string): string {
+    return title.trim();
+}
+
+function normalizeContent(content: NoteContent | null): NoteContent | null {
+    const trimmed = content?.trim() ?? '';
+
+    return trimmed === '' ? null : trimmed;
+}
+
+function sameIdList(left: number[], right: number[]): boolean {
+    if (left.length !== right.length) {
+        return false;
+    }
+
+    const sortedLeft = [...left].sort((a, b) => a - b);
+    const sortedRight = [...right].sort((a, b) => a - b);
+
+    return sortedLeft.every((id, index) => id === sortedRight[index]);
+}
+
+function sameNameList(left: string[], right: string[]): boolean {
+    if (left.length !== right.length) {
+        return false;
+    }
+
+    const sortedLeft = [...left].sort();
+    const sortedRight = [...right].sort();
+
+    return sortedLeft.every((name, index) => name === sortedRight[index]);
+}
 
 export function NoteFormSheet({
     open,
@@ -49,29 +94,86 @@ export function NoteFormSheet({
 }: NoteFormSheetProps) {
     const isEditing = note !== null;
     const [confirmDelete, setConfirmDelete] = useState(false);
+    const [title, setTitle] = useState('');
     const [color, setColor] = useState<NoteColorId>('default');
     const [isPinned, setIsPinned] = useState(false);
     const [content, setContent] = useState<NoteContent | null>(null);
     const [selectedLabelIds, setSelectedLabelIds] = useState<number[]>([]);
     const [newLabelNames, setNewLabelNames] = useState<string[]>([]);
     const [reminderAt, setReminderAt] = useState('');
+    const [baseline, setBaseline] = useState<NoteBaseline | null>(null);
+    const [editorNonce, setEditorNonce] = useState(0);
 
     useEffect(() => {
         if (!open) {
             setConfirmDelete(false);
+            setBaseline(null);
             return;
         }
 
-        setColor(note?.color ?? 'default');
-        setIsPinned(note?.is_pinned ?? false);
-        setContent(note?.content ?? null);
-        setSelectedLabelIds(note?.labels.map((label) => label.id) ?? []);
+        const nextTitle = note?.title ?? '';
+        const nextContent = note?.content ?? null;
+        const nextColor = note?.color ?? 'default';
+        const nextPinned = note?.is_pinned ?? false;
+        const nextLabelIds = note?.labels.map((label) => label.id) ?? [];
+        const nextReminder = toDatetimeLocalValue(note?.reminder_at ?? null);
+
+        setTitle(nextTitle);
+        setColor(nextColor);
+        setIsPinned(nextPinned);
+        setContent(nextContent);
+        setSelectedLabelIds(nextLabelIds);
         setNewLabelNames([]);
-        setReminderAt(toDatetimeLocalValue(note?.reminder_at ?? null));
+        setReminderAt(nextReminder);
+        setBaseline({
+            title: nextTitle,
+            content: nextContent,
+            color: nextColor,
+            isPinned: nextPinned,
+            selectedLabelIds: nextLabelIds,
+            newLabelNames: [],
+            reminderAt: nextReminder,
+        });
+        setEditorNonce(0);
     }, [open, note]);
 
+    const isDirty = useMemo(() => {
+        if (!baseline) {
+            return false;
+        }
+
+        return (
+            normalizeTitle(title) !== normalizeTitle(baseline.title) ||
+            normalizeContent(content) !== normalizeContent(baseline.content) ||
+            color !== baseline.color ||
+            isPinned !== baseline.isPinned ||
+            reminderAt !== baseline.reminderAt ||
+            !sameIdList(selectedLabelIds, baseline.selectedLabelIds) ||
+            !sameNameList(newLabelNames, baseline.newLabelNames)
+        );
+    }, [
+        baseline,
+        title,
+        content,
+        color,
+        isPinned,
+        reminderAt,
+        selectedLabelIds,
+        newLabelNames,
+    ]);
+
     const selectedLabelCount = selectedLabelIds.length + newLabelNames.length;
-    const editorKey = `${note?.id ?? 'new'}-${open ? 'open' : 'closed'}`;
+    const editorKey = `${note?.id ?? 'new'}-${open ? 'open' : 'closed'}-${editorNonce}`;
+
+    const handleOpenChange = (nextOpen: boolean) => {
+        if (!nextOpen && isDirty) {
+            if (!window.confirm('Discard unsaved changes?')) {
+                return;
+            }
+        }
+
+        onOpenChange(nextOpen);
+    };
 
     const deleteLabel = (label: LabelType) => {
         if (
@@ -93,8 +195,26 @@ export function NoteFormSheet({
         });
     };
 
+    const applyRestoredVersion = (version: NoteVersion) => {
+        const nextTitle = version.title ?? '';
+        const nextContent = version.content;
+
+        setTitle(nextTitle);
+        setContent(nextContent);
+        setBaseline((current) =>
+            current
+                ? {
+                      ...current,
+                      title: nextTitle,
+                      content: nextContent,
+                  }
+                : current,
+        );
+        setEditorNonce((current) => current + 1);
+    };
+
     return (
-        <Sheet open={open} onOpenChange={onOpenChange}>
+        <Sheet open={open} onOpenChange={handleOpenChange}>
             <SheetContent
                 side="right"
                 onOpenAutoFocus={(event) => event.preventDefault()}
@@ -143,7 +263,8 @@ export function NoteFormSheet({
                         transform={(data) =>
                             ({
                                 ...data,
-                                content: content ?? null,
+                                title: normalizeTitle(title) || null,
+                                content: normalizeContent(content),
                                 color,
                                 is_pinned: isPinned,
                                 label_ids: selectedLabelIds,
@@ -161,7 +282,10 @@ export function NoteFormSheet({
                                     <Input
                                         id="note-title"
                                         name="title"
-                                        defaultValue={note?.title ?? ''}
+                                        value={title}
+                                        onChange={(event) =>
+                                            setTitle(event.target.value)
+                                        }
                                         placeholder="Title"
                                         className={cn(
                                             fieldClassName,
@@ -195,7 +319,9 @@ export function NoteFormSheet({
                                         <NoteToolbarButton
                                             type="button"
                                             aria-label="Close"
-                                            onClick={() => onOpenChange(false)}
+                                            onClick={() =>
+                                                handleOpenChange(false)
+                                            }
                                         >
                                             <X className="size-4" />
                                         </NoteToolbarButton>
@@ -272,156 +398,177 @@ export function NoteFormSheet({
                                     className="shrink-0 px-4"
                                 />
 
-                                <div className="mt-auto flex shrink-0 items-center gap-1 border-t border-black/5 px-2 py-2 dark:border-white/10">
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <NoteToolbarButton
-                                                aria-label="Background color"
-                                                active={color !== 'default'}
-                                            >
-                                                <Palette className="size-4" />
-                                            </NoteToolbarButton>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-auto">
-                                            <p className="mb-2 text-sm font-medium">
-                                                Color
-                                            </p>
-                                            <NoteColorPicker
-                                                value={color}
-                                                onChange={setColor}
-                                                name="color"
-                                            />
-                                        </PopoverContent>
-                                    </Popover>
-
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <NoteToolbarButton
-                                                aria-label="Labels"
-                                                active={selectedLabelCount > 0}
-                                            >
-                                                <Tag className="size-4" />
-                                            </NoteToolbarButton>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-64">
-                                            <NoteLabelPickerContent
-                                                availableLabels={
-                                                    availableLabels
-                                                }
-                                                attachedLabels={
-                                                    note?.labels ?? []
-                                                }
-                                                selectedIds={selectedLabelIds}
-                                                newNames={newLabelNames}
-                                                onSelectedIdsChange={
-                                                    setSelectedLabelIds
-                                                }
-                                                onNewNamesChange={
-                                                    setNewLabelNames
-                                                }
-                                                onDeleteLabel={deleteLabel}
-                                            />
-                                        </PopoverContent>
-                                    </Popover>
-
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <NoteToolbarButton
-                                                aria-label="Reminder"
-                                                active={reminderAt !== ''}
-                                            >
-                                                <Bell className="size-4" />
-                                            </NoteToolbarButton>
-                                        </PopoverTrigger>
-                                        <PopoverContent
-                                            className="w-auto p-0"
-                                            align="start"
-                                        >
-                                            <NoteReminderPicker
-                                                value={reminderAt}
-                                                onChange={setReminderAt}
-                                            />
-                                        </PopoverContent>
-                                    </Popover>
-
-                                    {isEditing ? (
-                                        <>
-                                            <Separator
-                                                orientation="vertical"
-                                                className="mx-1 h-6"
-                                            />
-                                            {archivedView ? (
+                                <div className="relative mt-auto flex shrink-0 flex-col">
+                                    <div className="flex items-center gap-1 border-t border-black/5 px-2 py-2 dark:border-white/10">
+                                        <Popover>
+                                            <PopoverTrigger asChild>
                                                 <NoteToolbarButton
-                                                    aria-label="Restore note"
-                                                    onClick={() =>
-                                                        router.patch(
-                                                            NoteController.unarchive.url(
-                                                                note.id,
-                                                            ),
-                                                            {},
-                                                            {
-                                                                preserveScroll: true,
-                                                                onSuccess: () =>
-                                                                    onOpenChange(
-                                                                        false,
-                                                                    ),
-                                                            },
-                                                        )
+                                                    aria-label="Background color"
+                                                    active={color !== 'default'}
+                                                >
+                                                    <Palette className="size-4" />
+                                                </NoteToolbarButton>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto">
+                                                <p className="mb-2 text-sm font-medium">
+                                                    Color
+                                                </p>
+                                                <NoteColorPicker
+                                                    value={color}
+                                                    onChange={setColor}
+                                                    name="color"
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
+
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <NoteToolbarButton
+                                                    aria-label="Labels"
+                                                    active={
+                                                        selectedLabelCount > 0
                                                     }
                                                 >
-                                                    <Archive className="size-4" />
+                                                    <Tag className="size-4" />
                                                 </NoteToolbarButton>
-                                            ) : (
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-64">
+                                                <NoteLabelPickerContent
+                                                    availableLabels={
+                                                        availableLabels
+                                                    }
+                                                    attachedLabels={
+                                                        note?.labels ?? []
+                                                    }
+                                                    selectedIds={
+                                                        selectedLabelIds
+                                                    }
+                                                    newNames={newLabelNames}
+                                                    onSelectedIdsChange={
+                                                        setSelectedLabelIds
+                                                    }
+                                                    onNewNamesChange={
+                                                        setNewLabelNames
+                                                    }
+                                                    onDeleteLabel={deleteLabel}
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
+
+                                        <Popover>
+                                            <PopoverTrigger asChild>
                                                 <NoteToolbarButton
-                                                    aria-label="Archive note"
+                                                    aria-label="Reminder"
+                                                    active={reminderAt !== ''}
+                                                >
+                                                    <Bell className="size-4" />
+                                                </NoteToolbarButton>
+                                            </PopoverTrigger>
+                                            <PopoverContent
+                                                className="w-auto p-0"
+                                                align="start"
+                                            >
+                                                <NoteReminderPicker
+                                                    value={reminderAt}
+                                                    onChange={setReminderAt}
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
+
+                                        {isEditing ? (
+                                            <>
+                                                <Separator
+                                                    orientation="vertical"
+                                                    className="mx-1 h-6"
+                                                />
+                                                <NoteAttachmentsPanel
+                                                    noteId={note.id}
+                                                />
+                                                <NoteVersionHistory
+                                                    noteId={note.id}
+                                                    onRestored={
+                                                        applyRestoredVersion
+                                                    }
+                                                />
+                                                {archivedView ? (
+                                                    <NoteToolbarButton
+                                                        aria-label="Restore note"
+                                                        onClick={() =>
+                                                            router.patch(
+                                                                NoteController.unarchive.url(
+                                                                    note.id,
+                                                                ),
+                                                                {},
+                                                                {
+                                                                    preserveScroll: true,
+                                                                    onSuccess:
+                                                                        () =>
+                                                                            onOpenChange(
+                                                                                false,
+                                                                            ),
+                                                                },
+                                                            )
+                                                        }
+                                                    >
+                                                        <Archive className="size-4" />
+                                                    </NoteToolbarButton>
+                                                ) : (
+                                                    <NoteToolbarButton
+                                                        aria-label="Archive note"
+                                                        onClick={() =>
+                                                            router.patch(
+                                                                NoteController.archive.url(
+                                                                    note.id,
+                                                                ),
+                                                                {},
+                                                                {
+                                                                    preserveScroll: true,
+                                                                    onSuccess:
+                                                                        () =>
+                                                                            onOpenChange(
+                                                                                false,
+                                                                            ),
+                                                                },
+                                                            )
+                                                        }
+                                                    >
+                                                        <Archive className="size-4" />
+                                                    </NoteToolbarButton>
+                                                )}
+                                                <NoteToolbarButton
+                                                    aria-label="Delete note"
                                                     onClick={() =>
-                                                        router.patch(
-                                                            NoteController.archive.url(
-                                                                note.id,
-                                                            ),
-                                                            {},
-                                                            {
-                                                                preserveScroll: true,
-                                                                onSuccess: () =>
-                                                                    onOpenChange(
-                                                                        false,
-                                                                    ),
-                                                            },
-                                                        )
+                                                        setConfirmDelete(true)
                                                     }
                                                 >
-                                                    <Archive className="size-4" />
+                                                    <Trash2 className="size-4" />
                                                 </NoteToolbarButton>
-                                            )}
-                                            <NoteToolbarButton
-                                                aria-label="Delete note"
+                                            </>
+                                        ) : null}
+
+                                        <div className="ml-auto flex items-center gap-2 pr-1">
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-muted-foreground"
                                                 onClick={() =>
-                                                    setConfirmDelete(true)
+                                                    handleOpenChange(false)
                                                 }
                                             >
-                                                <Trash2 className="size-4" />
-                                            </NoteToolbarButton>
-                                        </>
-                                    ) : null}
-
-                                    <div className="ml-auto flex items-center gap-2 pr-1">
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            className="text-muted-foreground"
-                                            onClick={() => onOpenChange(false)}
-                                        >
-                                            Cancel
-                                        </Button>
-                                        <Button
-                                            type="submit"
-                                            size="sm"
-                                            disabled={processing}
-                                            className="rounded-full px-5"
-                                        >
-                                            {isEditing ? 'Save' : 'Create'}
-                                        </Button>
+                                                Cancel
+                                            </Button>
+                                            <Button
+                                                type="submit"
+                                                size="sm"
+                                                disabled={processing}
+                                                className="rounded-full px-5"
+                                            >
+                                                {isEditing
+                                                    ? 'Save'
+                                                    : 'Create'}
+                                            </Button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

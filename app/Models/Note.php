@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -60,6 +61,47 @@ class Note extends Model
     public function labels(): BelongsToMany
     {
         return $this->belongsToMany(Label::class);
+    }
+
+    /**
+     * @return HasMany<NoteVersion, $this>
+     */
+    public function versions(): HasMany
+    {
+        return $this->hasMany(NoteVersion::class)->latest('id');
+    }
+
+    /**
+     * @return HasMany<NoteAttachment, $this>
+     */
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(NoteAttachment::class)->latest('id');
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (Note $note): void {
+            $note->attachments()->each(fn (NoteAttachment $attachment) => $attachment->delete());
+        });
+    }
+
+    public function recordVersionIfChanged(): void
+    {
+        $latest = $this->versions()->first();
+
+        if (
+            $latest !== null
+            && $latest->title === $this->title
+            && $latest->content === $this->content
+        ) {
+            return;
+        }
+
+        $this->versions()->create([
+            'title' => $this->title,
+            'content' => $this->content,
+        ]);
     }
 
     /**

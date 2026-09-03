@@ -5,7 +5,7 @@ import { NoteCard } from '@/components/notes/note-card';
 import { NoteFormSheet } from '@/components/notes/note-form-sheet';
 import { NotesSearchInput } from '@/components/notes/notes-search-input';
 import { SortableNotesGrid } from '@/components/notes/sortable-notes-grid';
-import { NotesMasonryGrid } from '@/components/notes/notes-masonry-grid';
+import { NotesSections } from '@/components/notes/notes-sections';
 import { Button } from '@/components/ui/button';
 import {
     Select,
@@ -185,15 +185,15 @@ export default function NotesIndex({
                         onEditNote={openEdit}
                     />
                 ) : (
-                    <NotesMasonryGrid>
-                        {filteredNotes.map((note) => (
+                    <NotesSections
+                        notes={filteredNotes}
+                        renderNote={(note) => (
                             <NoteCard
-                                key={note.id}
                                 note={note}
                                 onClick={() => openEdit(note)}
                             />
-                        ))}
-                    </NotesMasonryGrid>
+                        )}
+                    />
                 )}
             </div>
 
